@@ -1,0 +1,7 @@
+{
+  "name": "pdf-parser",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "wuhen <15210204903@163.com>",
+  "license": "MIT"
+}
