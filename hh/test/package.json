@@ -1,0 +1,12 @@
+{
+   "name": "@byzk/pdf-locale-call",
+   "libName": "byzkpdflocalecall",
+   "version": "0.0.0",
+   "description": "博雅PDF阅读器通讯库",
+   "main": "index.js",
+   "types": "./index.d.ts",
+   "license": "MIT",
+   "dependencies": {
+      "spark-md5": "^3.0.2"
+   }
+}

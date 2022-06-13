@@ -1,0 +1,190 @@
+@pageNoWidth: 406px;
+.pdfContentsWrapper {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  overflow: auto;
+
+  > .fullPrompt {
+    position: fixed;
+    top: 86px;
+    left: 50%;
+    width: 236px;
+    height: 72px;
+    margin-left: (-236px / 2);
+    border-radius: 13px 13px 13px 13px;
+    background: #d9d9d9;
+    z-index: 999;
+
+    font-size: 24px;
+    font-family: Inter-Regular, Inter;
+    font-weight: 400;
+    color: #333333;
+    // -webkit-background-clip: text;
+    // -webkit-text-fill-color: transparent;
+    line-height: 72px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  > .pdfContentWrapper {
+    position: relative;
+    margin: 0 auto 20px auto;
+    > .moveContent {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      cursor: move;
+    }
+    > .pdfContent {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+    > .textLayer {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      //   display: block;
+      //   margin: 0 auto;
+      > span {
+        display: block;
+        position: absolute;
+      }
+    }
+  }
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  position: relative;
+  transition: all 0.3s;
+
+  .thumbnailWrapper {
+    margin: 0 auto 16px auto;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    font-size: 0;
+
+    > img {
+      display: inline-block;
+      border: 2px solid transparent;
+      &:hover,
+      &.active {
+        border: 2px solid #7991e5;
+      }
+    }
+
+    > .pageNo {
+      // position: absolute;
+      bottom: 0;
+      height: 35px;
+      line-height: 35px;
+      text-align: center;
+      left: 0;
+      right: 0;
+
+      color: #333333;
+      font-size: 16px;
+      font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+      font-weight: 400;
+    }
+    // &:before,
+    // &:after {
+    //   content: "";
+    //   position: absolute;
+    //   width: calc(50% - 28px);
+    //   height: 2px;
+    //   bottom: 16px;
+    //   background-color: #e6e6e6;
+    // }
+
+    &:before {
+      left: 8px;
+    }
+    &:after {
+      right: 8px;
+    }
+
+    // &:hover,
+    // &.active {
+    //   border: 2px solid #7991e5;
+    // }
+  }
+}
+
+@outlineHeight: 20px;
+.outlines {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  > .outline {
+    width: 100%;
+    height: @outlineHeight;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    margin-bottom: 4px;
+    line-height: @outlineHeight;
+    padding: 5px 0;
+
+    &:hover {
+      background: #cbd7ff;
+
+      // > .text,
+      // > .icon {
+      //   // > span {
+      //   //   color: #cbd7ff;
+      //   // }
+      // }
+    }
+
+    > .icon {
+      width: @outlineHeight;
+      height: @outlineHeight;
+      text-align: center;
+      line-height: @outlineHeight;
+
+      > img {
+        width: 14px;
+        height: 14px;
+        display: inline-block;
+        margin: 0 auto;
+        vertical-align: middle;
+      }
+      // > span {
+
+      // }
+    }
+    > .text {
+      width: calc(100% - @outlineHeight);
+      overflow: hidden;
+      text-overflow: ellipsis; //溢出用省略号显示
+      white-space: nowrap;
+      line-height: @outlineHeight;
+      > span {
+        font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+        font-size: 12px;
+        font-weight: 400;
+        color: #444c5e;
+      }
+    }
+
+    > .icon,
+    > .text {
+      float: left;
+    }
+  }
+}

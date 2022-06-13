@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body,
+        #app {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="./node_modules/@byzk/document-reader/dist/bkDocReader.js"></script>
+    <script src="./build/dist/pdfParser.js"></script>
+
+    <div id="app"></div>
+    <script>
+        pdfParser.loadPdfFonts("/fonts/cmaps/")
+        window.onload = () => {
+            window.app = new bkDocReader.App(document.getElementById("app"), {
+                fontConfig: {
+                    dir: "/test/fonts",
+                    eotFile: "iconfont.eot",
+                    woffFile: "iconfont.woff",
+                    woff2File: "iconfont.woff2",
+                    ttfFile: "iconfont.ttf",
+                    svgFile: "iconfont.svg",
+                }
+            })
+            window.app.getReader().attach(pdfParser)
+            window.app.show()
+        };
+    </script>
+</body>
+
+</html>
