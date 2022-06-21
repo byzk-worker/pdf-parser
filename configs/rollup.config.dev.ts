@@ -34,6 +34,8 @@ function onwarn(warning: RollupWarning, defaultHandler: WarningHandler) {
   defaultHandler(warning);
 }
 
+const Global = `var process={env:{NODE_ENV: 'development'}};`;
+
 const processLess = function (context, payload) {
   return new Promise((resolve, reject) => {
     less.render(
@@ -75,9 +77,10 @@ const configs: RollupOptions = {
       format: "iife",
       name: packageInfo.libName,
       sourcemap: true,
-      // globals: {
-      //   "@byzk/document-reader":"documentReader"
-      // }
+      banner: Global,
+      globals: {
+        "@byzk/document-reader":"bkDocReader"
+      }
       // plugins: [
       //   posthtml({
       //     directives: [{ name: "%", start: "<", end: ">" }],
@@ -87,6 +90,7 @@ const configs: RollupOptions = {
       //   "window.global = {XMLHttpRequest, setTimeout, ReadableStream, ArrayBuffer, location}; process.nextTick = function(){}; process.stderr={};",
     },
   ],
+  external: ["@byzk/document-reader"],
   onwarn,
   // external: ["@byzk/document-reader"],
   plugins: [

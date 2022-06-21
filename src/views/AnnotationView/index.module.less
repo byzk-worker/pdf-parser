@@ -1,0 +1,85 @@
+@titleHeight: 18px;
+@textLineHeight: 18px;
+@iconMarginRight: 6px;
+@textLinePadding: calc(@titleHeight*2 + @iconMarginRight);
+@textLineDescWidth: 65px;
+.annotation {
+  width: 100%;
+  overflow: hidden;
+  margin-bottom: 20px;
+  transition: all 0.3s;
+  &.shrink {
+    height: @titleHeight;
+    transition: all 0.3s;
+    > .title > .jiantou {
+      transition: all 0.3s;
+      transform: rotate(-90deg);
+    }
+  }
+
+  > .title {
+    width: 100%;
+    overflow: hidden;
+    height: @titleHeight;
+    line-height: @titleHeight;
+    font-size: 0;
+    > .jiantou,
+    > .icon {
+      position: relative;
+      display: inline-block;
+      width: @titleHeight;
+      height: 100%;
+      text-align: center;
+
+      > img {
+        vertical-align: middle;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+      }
+    }
+    > .jiantou {
+      cursor: pointer;
+      transition: all 0.3s;
+      transform: rotate(0deg);
+    }
+    > .icon {
+      margin-right: @iconMarginRight;
+    }
+    > .titleContent {
+      font-size: 12px;
+      font-weight: bolder;
+      display: inline-block;
+      width: calc(100% - @titleHeight*2 - @iconMarginRight);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: @titleHeight;
+      height: 100%;
+      cursor: pointer;
+    }
+  }
+  > .textLine {
+    width: 100%;
+    padding-left: @textLinePadding;
+    font-size: 0;
+
+    > .desc,
+    > .descContent {
+      font-size: 12px;
+      display: inline-block;
+      height: @textLineHeight;
+      line-height: @textLineHeight;
+    }
+    > .desc {
+      width: @textLineDescWidth;
+      overflow: hidden;
+    }
+    > .descContent {
+      width: calc(100% - @textLinePadding - @textLineDescWidth);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}

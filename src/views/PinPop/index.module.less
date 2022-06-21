@@ -1,0 +1,123 @@
+@pinPopWidth: 405px;
+@pinPopHeight: 199px;
+@titleHeight: 40px;
+@closeBtnSize: 18px;
+.mask {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.2);
+  z-index: 999;
+  overflow: hidden;
+
+  &.hide {
+    display: none;
+  }
+
+  .pinPop {
+    width: @pinPopWidth;
+    height: @pinPopHeight;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: calc(-@pinPopHeight / 2);
+    margin-left: calc(-@pinPopWidth / 2);
+    background: #fff;
+    box-shadow: 3px 2px 10px 2px rgba(0, 0, 0, 0.16);
+
+    > .title {
+      width: 100%;
+      height: @titleHeight;
+      background: #2752e7;
+      line-height: @titleHeight;
+      color: #fff;
+      position: relative;
+
+      > .text {
+        display: block;
+        padding-left: 16px;
+        font-size: 14px;
+        font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+        font-weight: 400;
+        cursor: default;
+        user-select: none;
+      }
+      > #close {
+        display: block;
+        width: @closeBtnSize;
+        height: @closeBtnSize;
+        position: absolute;
+        right: 26px;
+        top: 50%;
+        margin-top: calc(-@closeBtnSize / 2);
+        cursor: pointer;
+      }
+    }
+    > .content {
+      width: 100%;
+      height: calc(100%-@titleHeight);
+
+      > .form {
+        width: 100%;
+        padding: 23px 0 44px 0;
+        font-size: 0;
+        height: 30px;
+        line-height: 30px;
+
+        > label {
+          display: inline-block;
+          font-size: 12px;
+          font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+          font-weight: 400;
+          margin-left: 31px;
+          margin-right: 6px;
+          user-select: none;
+        }
+        > #password {
+          display: inline-block;
+          width: 252px;
+          height: 28px;
+          line-height: 28px;
+          font-size: 12px;
+          border-radius: 4px 4px 4px 4px;
+          outline: none;
+          border: 1px solid #e6e6e6;
+          padding-left: 6px;
+          color: #2752e7;
+
+          &:focus {
+            border: 1px solid #2752e7;
+          }
+        }
+      }
+
+      > .btnGroup {
+        width: 100%;
+        position: relative;
+
+        > #okBtn {
+          width: 99px;
+          height: 34px;
+          text-align: center;
+          background: #2752e7;
+          border-radius: 4px 4px 4px 4px;
+          line-height: 34px;
+          font-size: 14px;
+          font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+          font-weight: 400;
+          color: #ffffff;
+          float: right;
+          margin-right: 39px;
+          cursor: pointer;
+          user-select: none;
+          &.disabled {
+            background-color: #444c5e;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+  }
+}

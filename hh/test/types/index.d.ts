@@ -1,2 +1,3 @@
-export * from './openFileType';
-export * from './sealVerifyType';
+export * from './OpenFileType';
+export * from './SealType';
+export * from './Config';
