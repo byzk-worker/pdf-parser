@@ -501,9 +501,14 @@ export class PagesComponent {
       offset.y = 0;
     }
 
+    const currentTop = this._pageEleTopList[pageIndex];
+    let nextTop = this._pageEleTopList[pageIndex + 1];
+    if (!nextTop) {
+      nextTop = currentTop + this._pageEleList[pageIndex].clientHeight;
+    }
     const top = offset.y
-      ? parseInt(this._pageEleTopList[pageIndex + 1] - offset.y - 20 + "")
-      : parseInt(this._pageEleTopList[pageIndex] + "");
+      ? parseInt(nextTop - offset.y - 20 + "")
+      : parseInt(currentTop + "");
 
     this._targetScrollTop = top;
 

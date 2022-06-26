@@ -28,17 +28,18 @@ export class OutlineComponent {
 
     for (let i = 0; i < outlines.length; i++) {
       const outline = outlines[i];
-      const dest = outline.dest as [
+      let dest = outline.dest as [
         { num: number; gen: number },
         { name: string },
         number,
         number,
         number
       ];
-      if (!(dest instanceof Array)) {
-        continue;
+      const doc = this._doc();
+      if (typeof dest === "string") {
+        dest = (await doc.getDestination(dest)) as any;
       }
-      const pageIndex = await this._doc().getPageIndex(dest[0]);
+      // const pageIndex = await this._doc().getPageIndex(dest[0]);
       const outlineEle = document.createElement("div");
       outlineEle.className = styles.outline;
 
@@ -56,12 +57,20 @@ export class OutlineComponent {
       textSpan.innerText = outline.title;
       textDiv.appendChild(textSpan);
 
-      outlineEle.onclick = () => {
-        const scale = this._scaleGet();
-        const x = dest[2] * scale;
-        const y = dest[3] * scale;
-        this._pagesComponent.jumpTo(pageIndex + 1, { x, y });
-      };
+      if (dest instanceof Array) {
+        try {
+          const pageIndex = await doc.getPageIndex(dest[0]);
+          outlineEle.onclick = () => {
+            const scale = this._scaleGet();
+            const x = dest[2] * scale;
+            const y = dest[3] * scale;
+            this._pagesComponent.jumpTo(pageIndex + 1, { x, y });
+          };
+        } catch (e) {
+          console.log("标签解析失败: ", e.message || e);
+        }
+      }
+
       outlineEle.appendChild(iconDiv);
       outlineEle.appendChild(textDiv);
       this._wrapperEle.appendChild(outlineEle);

@@ -117877,9 +117877,14 @@ var pdfParser = (function (documentReader) {
             if (typeof offset.y === "undefined") {
                 offset.y = 0;
             }
+            var currentTop = this._pageEleTopList[pageIndex];
+            var nextTop = this._pageEleTopList[pageIndex + 1];
+            if (!nextTop) {
+                nextTop = currentTop + this._pageEleList[pageIndex].clientHeight;
+            }
             var top = offset.y
-                ? parseInt(this._pageEleTopList[pageIndex + 1] - offset.y - 20 + "")
-                : parseInt(this._pageEleTopList[pageIndex] + "");
+                ? parseInt(nextTop - offset.y - 20 + "")
+                : parseInt(currentTop + "");
             this._targetScrollTop = top;
             var scrollOptions = {
                 top: top,
@@ -118212,18 +118217,19 @@ var pdfParser = (function (documentReader) {
                                 return [2 /*return*/];
                             }
                             _loop_1 = function (i) {
-                                var outline, dest, pageIndex, outlineEle, iconDiv, iconImg, textDiv, textSpan;
+                                var outline, dest, doc, outlineEle, iconDiv, iconImg, textDiv, textSpan, pageIndex_1, e_1;
                                 return __generator(this, function (_b) {
                                     switch (_b.label) {
                                         case 0:
                                             outline = outlines[i];
                                             dest = outline.dest;
-                                            if (!(dest instanceof Array)) {
-                                                return [2 /*return*/, "continue"];
-                                            }
-                                            return [4 /*yield*/, this_1._doc().getPageIndex(dest[0])];
+                                            doc = this_1._doc();
+                                            if (!(typeof dest === "string")) return [3 /*break*/, 2];
+                                            return [4 /*yield*/, doc.getDestination(dest)];
                                         case 1:
-                                            pageIndex = _b.sent();
+                                            dest = (_b.sent());
+                                            _b.label = 2;
+                                        case 2:
                                             outlineEle = document.createElement("div");
                                             outlineEle.className = styles$7.outline;
                                             iconDiv = document.createElement("div");
@@ -118236,12 +118242,25 @@ var pdfParser = (function (documentReader) {
                                             textSpan = document.createElement("span");
                                             textSpan.innerText = outline.title;
                                             textDiv.appendChild(textSpan);
+                                            if (!(dest instanceof Array)) return [3 /*break*/, 6];
+                                            _b.label = 3;
+                                        case 3:
+                                            _b.trys.push([3, 5, , 6]);
+                                            return [4 /*yield*/, doc.getPageIndex(dest[0])];
+                                        case 4:
+                                            pageIndex_1 = _b.sent();
                                             outlineEle.onclick = function () {
                                                 var scale = _this._scaleGet();
                                                 var x = dest[2] * scale;
                                                 var y = dest[3] * scale;
-                                                _this._pagesComponent.jumpTo(pageIndex + 1, { x: x, y: y });
+                                                _this._pagesComponent.jumpTo(pageIndex_1 + 1, { x: x, y: y });
                                             };
+                                            return [3 /*break*/, 6];
+                                        case 5:
+                                            e_1 = _b.sent();
+                                            console.log("标签解析失败: ", e_1.message || e_1);
+                                            return [3 /*break*/, 6];
+                                        case 6:
                                             outlineEle.appendChild(iconDiv);
                                             outlineEle.appendChild(textDiv);
                                             this_1._wrapperEle.appendChild(outlineEle);
