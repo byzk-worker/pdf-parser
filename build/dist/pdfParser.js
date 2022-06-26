@@ -8551,7 +8551,7 @@ var pdfParser = (function (documentReader) {
         timeout: -1
     };
     const connectConfigGet = () => connConfig;
-    const connectLocal = 'pdfsvclocal.cn';
+    const baseUrl = 'http://pdfsvclocal.cn:28006';
     const requestError = {
         timeout: "请求超时",
         networkError: "网络错误"
@@ -8595,7 +8595,7 @@ var pdfParser = (function (documentReader) {
     var connectReady = false;
     const connectInit = () => {
         Begin({
-            url: `http://${connectLocal}:28006/dev`,
+            url: `${baseUrl}/dev`,
             connectionListener: (t) => {
                 connectReady = t === "open";
                 console.info(`客户端服务连接状态：${connectReady ? '已连接' : '已断开'}`);
@@ -8774,7 +8774,7 @@ var pdfParser = (function (documentReader) {
 
     const beginUpload = async (payload, options) => socketReq({ cmd: '/startBigFileUpload', data: payload }, options);
     const sliceUpload = async (payload, options) => {
-        var url = `http://${connectLocal}:28006/bigFileUpload`;
+        var url = baseUrl + '/bigFileUpload';
         if (payload.url) {
             url = payload.url;
         }
@@ -8788,6 +8788,15 @@ var pdfParser = (function (documentReader) {
     const endUpload = async (id, options) => socketReq({ cmd: '/getBigFileUploadResult', data: id }, options);
     const verifySeal = async (id, options) => socketReq({ cmd: '/seal/verify', data: id }, options);
     const getSealList = async (password, options) => socketReq({ cmd: '/sealMgr/getSealListByKeyNo', data: password }, options);
+    const signMany = async (req, options) => socketReq({
+        cmd: '/seal/signSiteBatch',
+        data: {
+            id: req.sealId,
+            fileId: req.fileId,
+            keyPwd: req.pwd,
+            pageList: req.pages.map((m) => { return { pageNum: m.page, x: m.positionX, y: m.positionY }; }),
+        },
+    }, options);
 
     /**
      * 验证pdf中所有印章
@@ -8816,8 +8825,18 @@ var pdfParser = (function (documentReader) {
         const rst = await getSealList(password, options);
         return rst;
     };
+    /**
+     * 多页签章接口
+     * @param params
+     * @param options
+     * @returns
+     */
+    const sealInMany = async (params, options) => {
+        const rst = await signMany(params, options);
+        return rst;
+    };
 
-    const splitFile = (file, shardSize) => {
+    const fileSplit = (file, shardSize) => {
         return new Promise((resovle, reject) => {
             if (isNull(file)) {
                 reject('获取文件失败, 文件不能为空');
@@ -8855,7 +8874,7 @@ var pdfParser = (function (documentReader) {
     /**
      * 上传文件接口
      */
-    const openFile = async (req, options) => {
+    const fileOpen = async (req, options) => {
         return new Promise(async (resolve, reject) => {
             var opt = options ?? connectConfigGet();
             const TIMEOUT = opt.timeout;
@@ -8873,7 +8892,7 @@ var pdfParser = (function (documentReader) {
             let sliceRsp;
             const shardSize = 5 * 1024 * 1024;
             try {
-                sliceRsp = await splitFile(rawHtmlEle.files[0], shardSize);
+                sliceRsp = await fileSplit(rawHtmlEle.files[0], shardSize);
             }
             catch (error) {
                 return reject(error);
@@ -8921,6 +8940,7 @@ var pdfParser = (function (documentReader) {
             return resolve(fileGuid);
         });
     };
+    const fileUrl = (fileId) => `${baseUrl}/download/sealFile?fileId=${fileId}`;
 
     //连接本地服务
     connectInit();
@@ -117423,9 +117443,10 @@ var pdfParser = (function (documentReader) {
      * pdf页组件
      */
     var PagesComponent = /** @class */ (function () {
-        function PagesComponent(_doc, _topEle, _initOptions) {
+        function PagesComponent(_doc, _topEle, _scaleGet, _initOptions) {
             this._doc = _doc;
             this._topEle = _topEle;
+            this._scaleGet = _scaleGet;
             this._initOptions = _initOptions;
             /**
              * 页面外层包装元素
@@ -117463,9 +117484,7 @@ var pdfParser = (function (documentReader) {
              * 旋转角度
              */
             this._rotation = 0;
-            this._initOptions = this._initOptions || {
-                scale: 1
-            };
+            this._initOptions = this._initOptions || {};
             this._pageWrapperEle.className = styles$9.pdfContentsWrapper;
             bindFullEvent(this._pageWrapperEle, this._pageWrapperFullSreenchange.bind(this));
             this._pageWrapperEle.onscroll = this._pageWrapperEleOnScroll.bind(this);
@@ -117479,6 +117498,7 @@ var pdfParser = (function (documentReader) {
                 document.fullScreen ||
                 document.mozFullScreen ||
                 document.webkitIsFullScreen;
+            debugger;
             if (isFullScreen) {
                 setTimeout(function () {
                     _this.fullWidth();
@@ -117507,8 +117527,9 @@ var pdfParser = (function (documentReader) {
                     this._fullPromptEle.remove();
                     this._fullPromptEle = undefined;
                 }
-                this.reloadAllPage({ scale: this._srcScale });
+                this.reloadAllPage({});
                 // this.setScale(this._tempScale || this.scale);
+                this._fullScale = undefined;
                 this._srcScale = undefined;
                 this._fullPromptEle = undefined;
                 this._fullPromptTimeout = undefined;
@@ -117560,7 +117581,7 @@ var pdfParser = (function (documentReader) {
          * @param options 选项
          */
         PagesComponent.prototype._drawPageNo = function (ctx, viewport, pageNo, options) {
-            var scale = options.scale || 1;
+            var scale = this._scaleGet() || 1;
             var filetext = pageNo + "/" + this._doc().numPages;
             var fontSize = pageNoFontSize * scale;
             ctx.font = fontSize + "px serif";
@@ -117601,6 +117622,13 @@ var pdfParser = (function (documentReader) {
                         case 0:
                             options = options || this._initOptions;
                             page = this._pageInfoList[index];
+                            if (!options.force) return [3 /*break*/, 2];
+                            return [4 /*yield*/, this._doc().getPage(index + 1)];
+                        case 1:
+                            page = _a.sent();
+                            this._pageInfoList[index] = page;
+                            _a.label = 2;
+                        case 2:
                             if (!page) {
                                 throw new Error("\u83B7\u53D6\u7B2C".concat(index + 1, "\u9875\u7684PDF\u6587\u4EF6\u5185\u5BB9\u5931\u8D25"));
                             }
@@ -117609,7 +117637,7 @@ var pdfParser = (function (documentReader) {
                                 throw new Error("\u83B7\u53D6\u7B2C".concat(index + 1, "\u9875\u7684PDF\u6587\u4EF6\u6E32\u67D3\u76EE\u6807\u5143\u7D20\u5931\u8D25"));
                             }
                             viewport = page.getViewport({
-                                scale: options.scale || 1
+                                scale: this._fullScale || this._scaleGet() || 1
                             });
                             pageEle.width = viewport.width;
                             pageEle.height = viewport.height;
@@ -117621,7 +117649,7 @@ var pdfParser = (function (documentReader) {
                                     canvasContext: ctx,
                                     viewport: viewport
                                 }).promise];
-                        case 1:
+                        case 3:
                             _a.sent();
                             if (options.showPageNo) {
                                 this._drawPageNo(ctx, viewport, index + 1, options);
@@ -117635,7 +117663,7 @@ var pdfParser = (function (documentReader) {
                             }
                             this._pageEleTopList[index] = parseInt(this._pageEleTopList[index] + "");
                             return [4 /*yield*/, this._execAttachList(init, page, parentEle, pageEle, index)];
-                        case 2:
+                        case 4:
                             _a.sent();
                             return [2 /*return*/];
                     }
@@ -117798,7 +117826,7 @@ var pdfParser = (function (documentReader) {
          */
         PagesComponent.prototype.fullWidth = function () {
             return __awaiter(this, void 0, void 0, function () {
-                var maxViewport, i, page, vw, pageWrapperWidth, scale;
+                var maxViewport, i, page, vw, pageWrapperWidth;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -117813,13 +117841,11 @@ var pdfParser = (function (documentReader) {
                                 }
                             }
                             pageWrapperWidth = this._pageWrapperEle.clientWidth;
-                            scale = pageWrapperWidth / maxViewport.width;
-                            return [4 /*yield*/, this.reloadAllPage({
-                                    scale: scale
-                                })];
+                            this._fullScale = pageWrapperWidth / maxViewport.width;
+                            return [4 /*yield*/, this.reloadAllPage()];
                         case 1:
                             _a.sent();
-                            return [2 /*return*/, scale];
+                            return [2 /*return*/, this._fullScale];
                     }
                 });
             });
@@ -117829,7 +117855,7 @@ var pdfParser = (function (documentReader) {
          * @param scale 原始缩放比率
          * @param options 选项
          */
-        PagesComponent.prototype.fullContent = function (scale, options) {
+        PagesComponent.prototype.fullContent = function (options) {
             return __awaiter(this, void 0, void 0, function () {
                 var fullPromptEle, fullPromptEle;
                 return __generator(this, function (_a) {
@@ -117837,7 +117863,7 @@ var pdfParser = (function (documentReader) {
                         return [2 /*return*/];
                     }
                     options = options || {};
-                    this._srcScale = scale;
+                    this._srcScale = this._scaleGet();
                     if (!options.prompt) {
                         fullPromptEle = createFullPromptEle();
                         fullPromptEle.innerText = fullPromptEleDefaultTexte;
@@ -119364,11 +119390,17 @@ var pdfParser = (function (documentReader) {
             _this._fileUploadInfo = { status: "no" };
             _this._nowPageNo = 1;
             return _this;
-            // public async sealDragOne(
-            //   sealInfo: SealInfo,
-            //   options?: SealDrgaOption
-            // ): Promise<SealDragResult> {
-            //   return {} as any;
+            // public async signSealPositionList(...signSeal: SealPositionInfo[]): Promise<void> {
+            //   if (this._fileUploadInfo.status !== "ok") {
+            //     throw new Error("文件未加载成功, 请售稍后重试!!!");
+            //   }
+            //   if (this._fileUploadInfo.error) {
+            //     throw new Error(this._fileUploadInfo.errMsg || "未知的文件获取异常");
+            //   }
+            //   if (!this._fileUploadInfo.id) {
+            //     throw new Error("获取文件ID失败");
+            //   }
+            //   sealInMany();
             // }
         }
         Parser.prototype._doc = function () {
@@ -119387,9 +119419,7 @@ var pdfParser = (function (documentReader) {
                     }
                     this.getScale = this.getScale.bind(this);
                     this._doc = this._doc.bind(this);
-                    this._pageComponent = new PagesComponent(this._doc, domEle, {
-                        scale: this.scale
-                    });
+                    this._pageComponent = new PagesComponent(this._doc, domEle, this.getScale, {});
                     this._pageComponent.addPageScrollEvent(this._pageScrollEvent.bind(this));
                     this._thumbnailComponent = new ThumbnailComponent(this._pageComponent);
                     this._textlayerComponent = new TextLayerComponent(this.getScale, "select");
@@ -119408,7 +119438,7 @@ var pdfParser = (function (documentReader) {
             this.scale = scale;
             this.fire("scaleChange", scale);
             // this._reloadAllPage();
-            this._pageComponent.reloadAllPage({ scale: scale });
+            this._pageComponent.reloadAllPage();
         };
         Parser.prototype.loadFile = function (file) {
             return __awaiter(this, void 0, void 0, function () {
@@ -119425,7 +119455,7 @@ var pdfParser = (function (documentReader) {
                                 }).promise];
                         case 1:
                             _a._pdfDoc = _b.sent();
-                            openFile(__assign({}, file))
+                            fileOpen(__assign({}, file))
                                 .then(function (id) { return __awaiter(_this, void 0, void 0, function () {
                                 var result;
                                 return __generator(this, function (_a) {
@@ -119476,13 +119506,11 @@ var pdfParser = (function (documentReader) {
         };
         Parser.prototype.showPageNo = function () {
             this._pageComponent.reloadAllPage({
-                scale: this.scale,
                 showPageNo: true
             });
         };
         Parser.prototype.hidePageNo = function () {
             this._pageComponent.reloadAllPage({
-                scale: this.scale,
                 showPageNo: false
             });
         };
@@ -119511,7 +119539,7 @@ var pdfParser = (function (documentReader) {
                 });
             }
             else {
-                this._pageComponent.fullContent(this.scale, options);
+                this._pageComponent.fullContent(options);
             }
         };
         Parser.prototype.renderThumbnail = function (domEle, options) {
@@ -119600,6 +119628,67 @@ var pdfParser = (function (documentReader) {
         };
         Parser.prototype.sealDrag = function (sealInfo, options) {
             return this._sealComponent.sealDrag(sealInfo, options);
+        };
+        Parser.prototype.signSealPositionList = function (sealInfo) {
+            var positionInfoList = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                positionInfoList[_i - 1] = arguments[_i];
+            }
+            return __awaiter(this, void 0, void 0, function () {
+                var reloadPageNo, sealPosList, url, _a;
+                var _this = this;
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
+                        case 0:
+                            if (this._fileUploadInfo.status !== "ok") {
+                                throw new Error("文件未加载成功, 请售稍后重试!!!");
+                            }
+                            if (this._fileUploadInfo.error) {
+                                throw new Error(this._fileUploadInfo.errMsg || "未知的文件获取异常");
+                            }
+                            if (!this._fileUploadInfo.id) {
+                                throw new Error("获取文件ID失败");
+                            }
+                            if (positionInfoList.length === 0) {
+                                throw new Error("签章坐标不能为空");
+                            }
+                            reloadPageNo = [];
+                            sealPosList = positionInfoList.map(function (r) {
+                                if (!reloadPageNo.includes(r.pageNo)) {
+                                    reloadPageNo.push(r.pageNo);
+                                }
+                                return {
+                                    page: r.pageNo,
+                                    positionX: r.x,
+                                    positionY: r.y
+                                };
+                            });
+                            return [4 /*yield*/, sealInMany({
+                                    sealId: sealInfo.id,
+                                    fileId: this._fileUploadInfo.id,
+                                    pages: sealPosList,
+                                    pwd: "88888888"
+                                })];
+                        case 1:
+                            _b.sent();
+                            url = fileUrl(this._fileUploadInfo.id);
+                            _a = this;
+                            return [4 /*yield*/, pdf.exports.getDocument({
+                                    url: url,
+                                    cMapPacked: cMapPacked,
+                                    cMapUrl: cMapUrl
+                                }).promise];
+                        case 2:
+                            _a._pdfDoc = _b.sent();
+                            reloadPageNo.forEach(function (pageNo) {
+                                return _this._pageComponent.reloadPage(pageNo, {
+                                    force: true
+                                });
+                            });
+                            return [2 /*return*/];
+                    }
+                });
+            });
         };
         return Parser;
     }(documentReader.ReaderParserAbstract));

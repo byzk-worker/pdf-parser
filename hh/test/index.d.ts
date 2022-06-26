@@ -1,5 +1,5 @@
-import { sealVerifyAll, sealQuery, sealIn, sealInQF } from './func/seal';
-import openFile from './func/openFile';
+import { sealVerifyAll, sealQuery, sealIn, sealInQF, sealInMany, sealInKeyword } from './func/seal';
+import { fileOpen, fileUrl } from './func/file';
 declare const configMgr: {
     connectGet: () => import("./types").ConnectConfig;
     connectSet: (opt: import("./types").ConnectConfig) => void;
@@ -11,4 +11,4 @@ declare const enums: {
     };
 };
 export * from './types';
-export { openFile, sealVerifyAll, sealQuery, sealIn, sealInQF, configMgr, enums };
+export { fileOpen, fileUrl, sealVerifyAll, sealQuery, sealIn, sealInQF, sealInMany, sealInKeyword, configMgr, enums };

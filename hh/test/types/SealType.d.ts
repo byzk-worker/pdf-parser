@@ -107,10 +107,80 @@ export interface SealInReq {
      * y坐标
      */
     positionY: number;
+    /**
+     * 设备密码
+     */
+    pwd: string;
 }
+/**
+ * 骑缝章请求参数
+ */
 export interface SealInQFReq extends SealInReq {
     /**
-     * 限制多少页一个章
+     * 多少页拆分一个章
      */
     size: number;
+}
+/**
+ * 多页盖章请求参数
+ */
+export interface SealInManyReq {
+    /**
+     * 印章id
+     */
+    sealId: string;
+    /**
+     * 文件id
+     */
+    fileId: string;
+    /**
+     * 要盖章的页码，不传盖整个文档
+     */
+    pages: SealInManyInfo[];
+    /**
+     * 设备密码
+     */
+    pwd: string;
+}
+/**
+ * 多页盖章微调对象
+ */
+export interface SealInManyInfo {
+    /**
+     * 页码
+     */
+    page: number;
+    /**
+     * x坐标
+     */
+    positionX: number;
+    /**
+     * y坐标
+     */
+    positionY: number;
+}
+/**
+ * 关键字盖章请求参数
+ */
+export interface SealInKeywordReq {
+    /**
+     * 印章id
+     */
+    sealId: string;
+    /**
+     * 文件id
+     */
+    fileId: string;
+    /**
+     * 设备密码
+     */
+    pwd: string;
+    /**
+     * 关键字
+     */
+    keyword: string;
+    /**
+     * 命中多个关键字，盖哪个
+     */
+    keywordNo?: number;
 }

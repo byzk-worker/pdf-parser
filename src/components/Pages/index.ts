@@ -38,8 +38,8 @@ export interface PageComponentAttachInterface {
 }
 
 export interface PagesOptions {
-  scale?: number;
   showPageNo?: boolean;
+  force?: boolean;
 }
 
 /**
@@ -115,14 +115,18 @@ export class PagesComponent {
    */
   private _pageCommpontAttachList: PageComponentAttachInterface[];
 
+  /**
+   * 全屏的缩放比率
+   */
+  private _fullScale: number | undefined;
+
   public constructor(
     private _doc: () => PDFDocumentProxy,
     private _topEle: HTMLElement,
+    private _scaleGet: () => number,
     private _initOptions?: PagesOptions
   ) {
-    this._initOptions = this._initOptions || {
-      scale: 1,
-    };
+    this._initOptions = this._initOptions || {};
     this._pageWrapperEle.className = styles.pdfContentsWrapper;
     bindFullEvent(
       this._pageWrapperEle,
@@ -140,6 +144,7 @@ export class PagesComponent {
       (document as any).fullScreen ||
       (document as any).mozFullScreen ||
       (document as any).webkitIsFullScreen;
+    debugger;
     if (isFullScreen) {
       setTimeout(() => {
         this.fullWidth();
@@ -169,8 +174,9 @@ export class PagesComponent {
         this._fullPromptEle.remove();
         this._fullPromptEle = undefined;
       }
-      this.reloadAllPage({ scale: this._srcScale });
+      this.reloadAllPage({});
       // this.setScale(this._tempScale || this.scale);
+      this._fullScale = undefined;
       this._srcScale = undefined;
       this._fullPromptEle = undefined;
       this._fullPromptTimeout = undefined;
@@ -235,7 +241,7 @@ export class PagesComponent {
     pageNo: number,
     options: PagesOptions
   ) {
-    const scale = options.scale || 1;
+    const scale = this._scaleGet() || 1;
     const filetext = pageNo + "/" + this._doc().numPages;
     const fontSize = pageNoFontSize * scale;
     ctx.font = fontSize + "px serif";
@@ -279,7 +285,11 @@ export class PagesComponent {
     options?: PagesOptions
   ) {
     options = options || this._initOptions;
-    const page = this._pageInfoList[index];
+    let page = this._pageInfoList[index];
+    if (options.force) {
+      page = await this._doc().getPage(index + 1);
+      this._pageInfoList[index] = page;
+    }
     if (!page) {
       throw new Error(`获取第${index + 1}页的PDF文件内容失败`);
     }
@@ -289,7 +299,7 @@ export class PagesComponent {
     }
 
     const viewport = page.getViewport({
-      scale: options.scale || 1,
+      scale: this._fullScale || this._scaleGet() || 1,
     });
     pageEle.width = viewport.width;
     pageEle.height = viewport.height;
@@ -430,11 +440,9 @@ export class PagesComponent {
       }
     }
     const pageWrapperWidth = this._pageWrapperEle.clientWidth;
-    const scale = pageWrapperWidth / maxViewport.width;
-    await this.reloadAllPage({
-      scale,
-    });
-    return scale;
+    this._fullScale = pageWrapperWidth / maxViewport.width;
+    await this.reloadAllPage();
+    return this._fullScale;
   }
 
   /**
@@ -442,25 +450,22 @@ export class PagesComponent {
    * @param scale 原始缩放比率
    * @param options 选项
    */
-  public async fullContent(
-    scale: number,
-    options?: {
-      /**
-       * 提示信息
-       */
-      prompt?: string | HTMLElement;
-      /**
-       * 超时关闭, 默认3000(ms), 小于0不关闭
-       */
-      timeout?: number;
-    }
-  ) {
+  public async fullContent(options?: {
+    /**
+     * 提示信息
+     */
+    prompt?: string | HTMLElement;
+    /**
+     * 超时关闭, 默认3000(ms), 小于0不关闭
+     */
+    timeout?: number;
+  }) {
     if (this._isFull) {
       return;
     }
 
     options = options || {};
-    this._srcScale = scale;
+    this._srcScale = this._scaleGet();
 
     if (!options.prompt) {
       const fullPromptEle = createFullPromptEle(fullPromptEleDefaultTexte);

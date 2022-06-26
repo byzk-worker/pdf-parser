@@ -4,8 +4,16 @@ import {
   ReaderParserSupport,
   ieUtil,
   SealDragResult,
+  SealPositionInfo,
 } from "@byzk/document-reader";
-import { openFile, sealVerifyAll, sealQuery } from "@byzk/pdf-locale-call";
+import {
+  fileOpen,
+  sealVerifyAll,
+  sealQuery,
+  sealInMany,
+  SealInManyInfo,
+  fileUrl,
+} from "@byzk/pdf-locale-call";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry.js";
 //@ts-ignore
@@ -71,9 +79,12 @@ class Parser extends ReaderParserAbstract {
     this.getScale = this.getScale.bind(this);
     this._doc = this._doc.bind(this);
 
-    this._pageComponent = new PagesComponent(this._doc, domEle, {
-      scale: this.scale,
-    });
+    this._pageComponent = new PagesComponent(
+      this._doc,
+      domEle,
+      this.getScale,
+      {}
+    );
     this._pageComponent.addPageScrollEvent(this._pageScrollEvent.bind(this));
 
     this._thumbnailComponent = new ThumbnailComponent(this._pageComponent);
@@ -111,7 +122,7 @@ class Parser extends ReaderParserAbstract {
     this.scale = scale;
     this.fire("scaleChange", scale);
     // this._reloadAllPage();
-    this._pageComponent.reloadAllPage({ scale });
+    this._pageComponent.reloadAllPage();
   }
 
   async loadFile(file: FileInfo): Promise<void> {
@@ -120,7 +131,7 @@ class Parser extends ReaderParserAbstract {
       cMapPacked,
       cMapUrl,
     }).promise;
-    openFile({
+    fileOpen({
       ...file,
     })
       .then(async (id) => {
@@ -155,14 +166,12 @@ class Parser extends ReaderParserAbstract {
 
   public showPageNo(): void {
     this._pageComponent.reloadAllPage({
-      scale: this.scale,
       showPageNo: true,
     });
   }
 
   public hidePageNo(): void {
     this._pageComponent.reloadAllPage({
-      scale: this.scale,
       showPageNo: false,
     });
   }
@@ -203,7 +212,7 @@ class Parser extends ReaderParserAbstract {
         this.fire("scaleChange", scale);
       });
     } else {
-      this._pageComponent.fullContent(this.scale, options);
+      this._pageComponent.fullContent(options);
     }
   }
 
@@ -274,12 +283,75 @@ class Parser extends ReaderParserAbstract {
   ): Promise<SealDragResult[]> {
     return this._sealComponent.sealDrag(sealInfo, options);
   }
-  // public async sealDragOne(
-  //   sealInfo: SealInfo,
-  //   options?: SealDrgaOption
-  // ): Promise<SealDragResult> {
 
-  //   return {} as any;
+  public async signSealPositionList(
+    sealInfo: SealInfo,
+    ...positionInfoList: SealPositionInfo[]
+  ): Promise<void> {
+    if (this._fileUploadInfo.status !== "ok") {
+      throw new Error("文件未加载成功, 请售稍后重试!!!");
+    }
+
+    if (this._fileUploadInfo.error) {
+      throw new Error(this._fileUploadInfo.errMsg || "未知的文件获取异常");
+    }
+
+    if (!this._fileUploadInfo.id) {
+      throw new Error("获取文件ID失败");
+    }
+
+    if (positionInfoList.length === 0) {
+      throw new Error("签章坐标不能为空");
+    }
+
+    const reloadPageNo: number[] = [];
+
+    const sealPosList: SealInManyInfo[] = positionInfoList.map((r) => {
+      if (!reloadPageNo.includes(r.pageNo)) {
+        reloadPageNo.push(r.pageNo);
+      }
+      return {
+        page: r.pageNo,
+        positionX: r.x,
+        positionY: r.y,
+      };
+    });
+
+    await sealInMany({
+      sealId: sealInfo.id,
+      fileId: this._fileUploadInfo.id,
+      pages: sealPosList,
+      pwd: "88888888",
+    });
+
+    const url = fileUrl(this._fileUploadInfo.id);
+    this._pdfDoc = await pdfjsLib.getDocument({
+      url: url,
+      cMapPacked,
+      cMapUrl,
+    }).promise;
+
+    reloadPageNo.forEach((pageNo) =>
+      this._pageComponent.reloadPage(pageNo, {
+        force: true,
+      })
+    );
+  }
+
+  // public async signSealPositionList(...signSeal: SealPositionInfo[]): Promise<void> {
+  //   if (this._fileUploadInfo.status !== "ok") {
+  //     throw new Error("文件未加载成功, 请售稍后重试!!!");
+  //   }
+
+  //   if (this._fileUploadInfo.error) {
+  //     throw new Error(this._fileUploadInfo.errMsg || "未知的文件获取异常");
+  //   }
+
+  //   if (!this._fileUploadInfo.id) {
+  //     throw new Error("获取文件ID失败");
+  //   }
+
+  //   sealInMany();
   // }
 }
 

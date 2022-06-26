@@ -7721,7 +7721,7 @@ var connConfig = {
 };
 const connectConfigGet = () => connConfig;
 const connectConfigSet = (opt) => { connConfig = opt; };
-const connectLocal = 'pdfsvclocal.cn';
+const baseUrl = 'http://pdfsvclocal.cn:28006';
 const requestError = {
     timeout: "请求超时",
     networkError: "网络错误"
@@ -7765,7 +7765,7 @@ const isObject = (e) => {
 var connectReady = false;
 const connectInit = () => {
     Begin({
-        url: `http://${connectLocal}:28006/dev`,
+        url: `${baseUrl}/dev`,
         connectionListener: (t) => {
             connectReady = t === "open";
             console.info(`客户端服务连接状态：${connectReady ? '已连接' : '已断开'}`);
@@ -7944,7 +7944,7 @@ const socketReqInRetry = async (params, options, nowRetryCount) => {
 
 const beginUpload = async (payload, options) => socketReq({ cmd: '/startBigFileUpload', data: payload }, options);
 const sliceUpload = async (payload, options) => {
-    var url = `http://${connectLocal}:28006/bigFileUpload`;
+    var url = baseUrl + '/bigFileUpload';
     if (payload.url) {
         url = payload.url;
     }
@@ -7958,8 +7958,27 @@ const sliceUpload = async (payload, options) => {
 const endUpload = async (id, options) => socketReq({ cmd: '/getBigFileUploadResult', data: id }, options);
 const verifySeal = async (id, options) => socketReq({ cmd: '/seal/verify', data: id }, options);
 const getSealList = async (password, options) => socketReq({ cmd: '/sealMgr/getSealListByKeyNo', data: password }, options);
-const signature = async (req, options) => socketReq({ cmd: '/seal/sign', data: { id: req.sealId, fileId: req.fileId, pageNum: req.page, x: req.positionX, y: req.positionY } }, options);
-const signQF = async (req, options) => socketReq({ cmd: '/seal/signQF', data: { id: req.sealId, fileId: req.fileId, pageNum: req.page, x: req.positionX, y: req.positionY, size: req.size } }, options);
+const signature = async (req, options) => socketReq({ cmd: '/seal/sign', data: { id: req.sealId, fileId: req.fileId, pageNum: req.page, x: req.positionX, y: req.positionY, keyPwd: req.pwd } }, options);
+const signQF = async (req, options) => socketReq({ cmd: '/seal/signQF', data: { id: req.sealId, fileId: req.fileId, pageNum: req.page, x: req.positionX, y: req.positionY, size: req.size, keyPwd: req.pwd } }, options);
+const signMany = async (req, options) => socketReq({
+    cmd: '/seal/signSiteBatch',
+    data: {
+        id: req.sealId,
+        fileId: req.fileId,
+        keyPwd: req.pwd,
+        pageList: req.pages.map((m) => { return { pageNum: m.page, x: m.positionX, y: m.positionY }; }),
+    },
+}, options);
+const signKeyword = async (req, options) => socketReq({
+    cmd: '/seal/signKeyword',
+    data: {
+        id: req.sealId,
+        fileId: req.fileId,
+        keyPwd: req.pwd,
+        keyword: req.keyword,
+        keywordNo: req.keywordNo
+    }
+}, options);
 
 /**
  * 验证pdf中所有印章
@@ -8007,8 +8026,28 @@ const sealInQF = async (params, options) => {
     const rst = await signQF(params, options);
     return rst;
 };
+/**
+ * 多页签章接口
+ * @param params
+ * @param options
+ * @returns
+ */
+const sealInMany = async (params, options) => {
+    const rst = await signMany(params, options);
+    return rst;
+};
+/**
+ * 关键字签章
+ * @param params
+ * @param options
+ * @returns
+ */
+const sealInKeyword = async (params, options) => {
+    const rst = await signKeyword(params, options);
+    return rst;
+};
 
-const splitFile = (file, shardSize) => {
+const fileSplit = (file, shardSize) => {
     return new Promise((resovle, reject) => {
         if (isNull(file)) {
             reject('获取文件失败, 文件不能为空');
@@ -8046,7 +8085,7 @@ const splitFile = (file, shardSize) => {
 /**
  * 上传文件接口
  */
-const openFile = async (req, options) => {
+const fileOpen = async (req, options) => {
     return new Promise(async (resolve, reject) => {
         var opt = options ?? connectConfigGet();
         const TIMEOUT = opt.timeout;
@@ -8064,7 +8103,7 @@ const openFile = async (req, options) => {
         let sliceRsp;
         const shardSize = 5 * 1024 * 1024;
         try {
-            sliceRsp = await splitFile(rawHtmlEle.files[0], shardSize);
+            sliceRsp = await fileSplit(rawHtmlEle.files[0], shardSize);
         }
         catch (error) {
             return reject(error);
@@ -8112,6 +8151,7 @@ const openFile = async (req, options) => {
         return resolve(fileGuid);
     });
 };
+const fileUrl = (fileId) => `${baseUrl}/download/sealFile?fileId=${fileId}`;
 
 //连接本地服务
 connectInit();
@@ -8125,4 +8165,4 @@ const enums = {
     requestError
 };
 
-export { configMgr, enums, openFile, sealIn, sealInQF, sealQuery, sealVerifyAll };
+export { configMgr, enums, fileOpen, fileUrl, sealIn, sealInKeyword, sealInMany, sealInQF, sealQuery, sealVerifyAll };

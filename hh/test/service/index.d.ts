@@ -1,4 +1,4 @@
-import { ConnectConfig, SealInQFReq, SealInReq } from "../types";
+import { ConnectConfig, SealInKeywordReq, SealInManyReq, SealInQFReq, SealInReq } from "../types";
 interface BeginUploadParam {
     name: string;
     id: string;
@@ -20,4 +20,6 @@ export declare const verifySeal: (id: string, options?: ConnectConfig) => Promis
 export declare const getSealList: (password: string, options?: ConnectConfig) => Promise<any>;
 export declare const signature: (req: SealInReq, options?: ConnectConfig) => Promise<any>;
 export declare const signQF: (req: SealInQFReq, options?: ConnectConfig) => Promise<any>;
+export declare const signMany: (req: SealInManyReq, options?: ConnectConfig) => Promise<any>;
+export declare const signKeyword: (req: SealInKeywordReq, options?: ConnectConfig) => Promise<any>;
 export {};

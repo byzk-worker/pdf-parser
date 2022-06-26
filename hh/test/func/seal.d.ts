@@ -1,5 +1,5 @@
 import { ConnectConfig } from "../types";
-import { SealVerifyInfo, SealQueryRsp, SealInReq, SealInQFReq } from "../types/SealType";
+import { SealVerifyInfo, SealQueryRsp, SealInReq, SealInQFReq, SealInManyReq, SealInKeywordReq } from "../types/SealType";
 /**
  * 验证pdf中所有印章
  * @param fileId
@@ -27,3 +27,17 @@ export declare const sealIn: (params: SealInReq, options?: ConnectConfig) => Pro
  * @param options
  */
 export declare const sealInQF: (params: SealInQFReq, options?: ConnectConfig) => Promise<string>;
+/**
+ * 多页签章接口
+ * @param params
+ * @param options
+ * @returns
+ */
+export declare const sealInMany: (params: SealInManyReq, options?: ConnectConfig) => Promise<string>;
+/**
+ * 关键字签章
+ * @param params
+ * @param options
+ * @returns
+ */
+export declare const sealInKeyword: (params: SealInKeywordReq, options?: ConnectConfig) => Promise<string>;
