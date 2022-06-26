@@ -132,3 +132,13 @@ export function mmConversionPx(value: number) {
   //      console.log(c_value);
   return c_value;
 }
+
+let _idNo = 0;
+/**
+ * 创建唯一id
+ * @returns 唯一id
+ */
+export function createId() {
+  _idNo += 1;
+  return "".concat(new Date().getTime() + "", ".").concat(_idNo + "");
+}

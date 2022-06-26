@@ -85,7 +85,11 @@ class Parser extends ReaderParserAbstract {
       this.getScale
     );
 
-    this._sealComponent = new SealComponent(this._pageComponent, this.getScale);
+    this._sealComponent = new SealComponent(
+      this._pageComponent,
+      this.getScale,
+      () => this.app
+    );
 
     this._pageComponent.init(
       this._thumbnailComponent,
@@ -246,10 +250,8 @@ class Parser extends ReaderParserAbstract {
         metadata: seal,
       } as SealInfo);
     }
-    console.log(sealList);
 
     return sealResult;
-    // throw new Error("稍等...");
   }
 
   public getRotation(): number {

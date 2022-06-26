@@ -1,0 +1,28 @@
+@optionHeight: 17px;
+
+.menu {
+  width: 110px;
+  position: absolute;
+  overflow: hidden;
+  background-color: #322e2e;
+  z-index: 999999;
+  padding-top: 18px;
+
+  > .option {
+    text-align: center;
+    width: 100%;
+    height: @optionHeight;
+    line-height: @optionHeight;
+    font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+    font-size: 14px;
+    font-weight: 400;
+    margin-bottom: 18px;
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      background: #2752e7;
+    }
+  }
+}
