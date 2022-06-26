@@ -226,9 +226,9 @@ class Parser extends ReaderParserAbstract {
   }
 
   public async sealList(): Promise<SealInfo[]> {
-    const res = await showPinPopAndGetPassword();
+    const res = await showPinPopAndGetPassword(this.app.getRootEle());
     if (res.cancel) {
-      return [];
+      return undefined;
     }
     const sealList = await sealQuery(res.password);
     const sealResult: SealInfo[] = [];
@@ -265,13 +265,20 @@ class Parser extends ReaderParserAbstract {
       }
     });
   }
-  public async sealDragOne(
+
+  public sealDrag(
     sealInfo: SealInfo,
     options?: SealDrgaOption
-  ): Promise<SealDragResult> {
-    
-    return {} as any;
+  ): Promise<SealDragResult[]> {
+    return this._sealComponent.sealDrag(sealInfo, options);
   }
+  // public async sealDragOne(
+  //   sealInfo: SealInfo,
+  //   options?: SealDrgaOption
+  // ): Promise<SealDragResult> {
+
+  //   return {} as any;
+  // }
 }
 
 /**

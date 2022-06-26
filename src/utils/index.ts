@@ -81,11 +81,11 @@ export function htmlTemplateParser(htmlStrGet: () => string) {
   );
 }
 
-export function htmlTemplateConvertEle(htmlEleStr: string) {
+export function htmlTemplateConvertEle(htmlEleStr: string): HTMLElement {
   const template = document.createElement("template");
   template.innerHTML = htmlEleStr;
 
-  return template.content;
+  return template.content.children[0] as any;
 }
 
 /**

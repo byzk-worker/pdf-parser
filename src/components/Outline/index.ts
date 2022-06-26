@@ -35,6 +35,9 @@ export class OutlineComponent {
         number,
         number
       ];
+      if (!(dest instanceof Array)) {
+        continue;
+      }
       const pageIndex = await this._doc().getPageIndex(dest[0]);
       const outlineEle = document.createElement("div");
       outlineEle.className = styles.outline;

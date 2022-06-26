@@ -40,7 +40,7 @@ export function createAnnotationEle(
       styles,
       ...data,
     })
-  ).children[0] as HTMLElement;
+  ) as HTMLElement;
 
   const jiantouEle = annotationEle.querySelector(
     "." + styles.jiantou

@@ -15,15 +15,19 @@ let waitResult:
 
 const pinPopEle = htmlTemplateConvertEle(
   htmlTemplateParser(htmlStr)({ styles })
-).children[0] as HTMLElement;
-
-document.body.appendChild(pinPopEle);
+) as HTMLElement;
 
 const passwordEle = pinPopEle.querySelector(
   "#" + styles.password
 ) as HTMLInputElement;
 const okBtnEle = pinPopEle.querySelector("#" + styles.okBtn) as HTMLElement;
 const closeEle = pinPopEle.querySelector("#" + styles.close) as HTMLElement;
+
+function escKeyHandle(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    closeEle.dispatchEvent(new MouseEvent("click"));
+  }
+}
 
 passwordEle.onkeyup = (event) => {
   if (event.key === "Enter") {
@@ -39,6 +43,7 @@ passwordEle.onkeyup = (event) => {
 };
 
 closeEle.onclick = async () => {
+  document.removeEventListener("keydown", escKeyHandle);
   pinPopEle.className += " " + styles.hide;
   const res = await waitBreakUndefined(() => waitResult);
   waitResult = undefined;
@@ -50,6 +55,7 @@ okBtnEle.onclick = async () => {
   if (okBtnEle.className.includes(styles.disabled)) {
     return;
   }
+  document.removeEventListener("keydown", escKeyHandle);
   pinPopEle.className += " " + styles.hide;
   const res = await waitBreakUndefined(() => waitResult);
   waitResult = undefined;
@@ -58,14 +64,22 @@ okBtnEle.onclick = async () => {
   res.resovle({ cancel: false, password: password });
 };
 
-export function showPinPopAndGetPassword(): Promise<{
+export function showPinPopAndGetPassword(
+  rootEle?: HTMLElement
+): Promise<{
   cancel: boolean;
   password?: string;
 }> {
+  rootEle = rootEle || document.body;
+  if (pinPopEle.parentElement !== rootEle) {
+    rootEle.appendChild(pinPopEle);
+  }
   if (waitResult) {
     throw new Error("密码获取进程被锁定");
   }
   pinPopEle.className = pinPopEle.className.split(" " + styles.hide).join("");
+  passwordEle.focus();
+  document.addEventListener("keydown", escKeyHandle);
 
   return new Promise((resovle, reject) => {
     waitResult = { resovle, reject };
