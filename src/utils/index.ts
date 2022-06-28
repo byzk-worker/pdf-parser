@@ -93,21 +93,24 @@ export function htmlTemplateConvertEle(htmlEleStr: string): HTMLElement {
  * @returns {Array}
  */
 function conversionGetDPI() {
-  var arrDPI = new Array();
-  const screen = window.screen as any;
-  if (screen.deviceXDPI) {
-    arrDPI[0] = screen.deviceXDPI;
-    arrDPI[1] = screen.deviceYDPI;
-  } else {
-    let tmpNode = document.createElement("div") as any;
-    tmpNode.style.cssText =
-      "width:1in;height:1in;position:absolute;left:0px;top:0px;z-index:99;visibility:hidden";
-    document.body.appendChild(tmpNode);
-    arrDPI[0] = parseInt(tmpNode.offsetWidth);
-    arrDPI[1] = parseInt(tmpNode.offsetHeight);
-    tmpNode.parentNode.removeChild(tmpNode);
-  }
-  return arrDPI;
+  // var arrDPI = new Array();
+  // const screen = window.screen as any;
+  // if (screen.deviceXDPI) {
+  //   arrDPI[0] = screen.deviceXDPI;
+  //   arrDPI[1] = screen.deviceYDPI;
+  // } else {
+  //   let tmpNode = document.createElement("div") as any;
+  //   tmpNode.style.cssText =
+  //     "width:1in;height:1in;position:absolute;left:0px;top:0px;z-index:99;visibility:hidden";
+  //   document.body.appendChild(tmpNode);
+  //   arrDPI[0] = parseInt(tmpNode.offsetWidth);
+  //   arrDPI[1] = parseInt(tmpNode.offsetHeight);
+  //   tmpNode.parentNode.removeChild(tmpNode);
+  // }
+  // return arrDPI;
+
+  // pdf固定为72 dpi
+  return [72];
 }
 
 /**
@@ -117,7 +120,7 @@ function conversionGetDPI() {
  */
 export function pxConversionMm(value: number) {
   var inch = value / conversionGetDPI()[0];
-  var c_value = inch * 33.8;
+  var c_value = inch * 25.4;
   //      console.log(c_value);
   return c_value;
 }
@@ -127,7 +130,7 @@ export function pxConversionMm(value: number) {
  * @returns {number}
  */
 export function mmConversionPx(value: number) {
-  var inch = value / 26.4;
+  var inch = value / 25.4;
   var c_value = inch * conversionGetDPI()[0];
   //      console.log(c_value);
   return c_value;

@@ -168,56 +168,6 @@ export class SealComponent implements PageComponentAttachInterface {
    * @param event 事件
    */
   private _menuOptionContinueClick(event: MouseEvent) {
-    // const {
-    //   pageIndex,
-    //   sealInfo,
-    //   options,
-    //   wrapperEle,
-    //   sealImgEle,
-    //   maskEle,
-    // } = this._dragSealInfo;
-    // const pageIndexStr = pageIndex + "";
-    // let cacheMap = this._dragSealResultCacheMap[pageIndexStr];
-    // if (!cacheMap) {
-    //   cacheMap = {};
-    //   this._dragSealResultCacheMap[pageIndexStr] = cacheMap;
-    // }
-
-    // const scale = this._scaleGet();
-    // let top = parseInt(wrapperEle.style.top || "0");
-    // let left = parseInt(wrapperEle.style.left || "0");
-    // let y = wrapperEle.parentElement.clientHeight - top;
-    // let x = left;
-    // if (options.cernterPositionMode === "leftBottom") {
-    //   x -= wrapperEle.clientWidth / 2;
-    //   y -= wrapperEle.clientHeight / 2;
-    // }
-
-    // x /= scale;
-    // y /= scale;
-    // top += wrapperEle.clientHeight / 2;
-    // left += wrapperEle.clientWidth / 2;
-    // top /= scale;
-    // left /= scale;
-
-    // const id = createId();
-    // const dragSealResult: SealDragResultCache = {
-    //   _: {
-    //     id,
-    //     top,
-    //     left,
-    //     wrapperEle,
-    //     sealImgEle,
-    //     maskEle,
-    //   },
-    //   pageNo: pageIndex || 1,
-    //   sealInfo,
-    //   x,
-    //   y,
-    //   cernterPositionMode: options.cernterPositionMode,
-    // };
-
-    // cacheMap[id] = dragSealResult;
     const {
       _cacheResult: dragSealResult,
       wrapperEle,
@@ -413,14 +363,27 @@ export class SealComponent implements PageComponentAttachInterface {
     }
 
     const scale = this._._scaleGet();
+
     let top = parseInt(wrapperEle.style.top || "0");
     let left = parseInt(wrapperEle.style.left || "0");
-    let y = wrapperEle.parentElement.clientHeight - top;
+
     let x = left;
-    if (options.cernterPositionMode === "leftBottom") {
-      x -= wrapperEle.clientWidth / 2;
-      y -= wrapperEle.clientHeight / 2;
+    let y = wrapperEle.parentElement.clientHeight - top;
+
+    if (options.cernterPositionMode === "center") {
+      x += sealImgEle.width / 2;
+      y -= sealImgEle.height / 2;
     }
+
+    // if (options.cernterPositionMode === "center") {
+    //   x += sealImgEle.width / 2;
+    //   y -= sealImgEle.width / 2;
+    // }
+
+    // if (options.cernterPositionMode === "leftBottom") {
+    //   x -= wrapperEle.clientWidth / 2;
+    //   y -= wrapperEle.clientHeight / 2;
+    // }
 
     x /= scale;
     y /= scale;
@@ -428,6 +391,8 @@ export class SealComponent implements PageComponentAttachInterface {
     left += wrapperEle.clientWidth / 2;
     top /= scale;
     left /= scale;
+
+    console.log("left => ", left);
 
     const id = createId();
     const dragSealResult: SealDragResultCache = {

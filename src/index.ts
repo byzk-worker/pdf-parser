@@ -314,6 +314,8 @@ class Parser extends ReaderParserAbstract {
         page: r.pageNo,
         positionX: r.x,
         positionY: r.y,
+        // positionX: 0,
+        // positionY: 0,
       };
     });
 

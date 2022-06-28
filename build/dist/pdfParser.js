@@ -117348,22 +117348,23 @@ var pdfParser = (function (documentReader) {
      * @returns {Array}
      */
     function conversionGetDPI() {
-        var arrDPI = new Array();
-        var screen = window.screen;
-        if (screen.deviceXDPI) {
-            arrDPI[0] = screen.deviceXDPI;
-            arrDPI[1] = screen.deviceYDPI;
-        }
-        else {
-            var tmpNode = document.createElement("div");
-            tmpNode.style.cssText =
-                "width:1in;height:1in;position:absolute;left:0px;top:0px;z-index:99;visibility:hidden";
-            document.body.appendChild(tmpNode);
-            arrDPI[0] = parseInt(tmpNode.offsetWidth);
-            arrDPI[1] = parseInt(tmpNode.offsetHeight);
-            tmpNode.parentNode.removeChild(tmpNode);
-        }
-        return arrDPI;
+        // var arrDPI = new Array();
+        // const screen = window.screen as any;
+        // if (screen.deviceXDPI) {
+        //   arrDPI[0] = screen.deviceXDPI;
+        //   arrDPI[1] = screen.deviceYDPI;
+        // } else {
+        //   let tmpNode = document.createElement("div") as any;
+        //   tmpNode.style.cssText =
+        //     "width:1in;height:1in;position:absolute;left:0px;top:0px;z-index:99;visibility:hidden";
+        //   document.body.appendChild(tmpNode);
+        //   arrDPI[0] = parseInt(tmpNode.offsetWidth);
+        //   arrDPI[1] = parseInt(tmpNode.offsetHeight);
+        //   tmpNode.parentNode.removeChild(tmpNode);
+        // }
+        // return arrDPI;
+        // pdf固定为72 dpi
+        return [72];
     }
     /**
      * mm转换为px
@@ -117371,7 +117372,7 @@ var pdfParser = (function (documentReader) {
      * @returns {number}
      */
     function mmConversionPx(value) {
-        var inch = value / 26.4;
+        var inch = value / 25.4;
         var c_value = inch * conversionGetDPI()[0];
         //      console.log(c_value);
         return c_value;
@@ -118879,52 +118880,6 @@ var pdfParser = (function (documentReader) {
          * @param event 事件
          */
         SealComponent.prototype._menuOptionContinueClick = function (event) {
-            // const {
-            //   pageIndex,
-            //   sealInfo,
-            //   options,
-            //   wrapperEle,
-            //   sealImgEle,
-            //   maskEle,
-            // } = this._dragSealInfo;
-            // const pageIndexStr = pageIndex + "";
-            // let cacheMap = this._dragSealResultCacheMap[pageIndexStr];
-            // if (!cacheMap) {
-            //   cacheMap = {};
-            //   this._dragSealResultCacheMap[pageIndexStr] = cacheMap;
-            // }
-            // const scale = this._scaleGet();
-            // let top = parseInt(wrapperEle.style.top || "0");
-            // let left = parseInt(wrapperEle.style.left || "0");
-            // let y = wrapperEle.parentElement.clientHeight - top;
-            // let x = left;
-            // if (options.cernterPositionMode === "leftBottom") {
-            //   x -= wrapperEle.clientWidth / 2;
-            //   y -= wrapperEle.clientHeight / 2;
-            // }
-            // x /= scale;
-            // y /= scale;
-            // top += wrapperEle.clientHeight / 2;
-            // left += wrapperEle.clientWidth / 2;
-            // top /= scale;
-            // left /= scale;
-            // const id = createId();
-            // const dragSealResult: SealDragResultCache = {
-            //   _: {
-            //     id,
-            //     top,
-            //     left,
-            //     wrapperEle,
-            //     sealImgEle,
-            //     maskEle,
-            //   },
-            //   pageNo: pageIndex || 1,
-            //   sealInfo,
-            //   x,
-            //   y,
-            //   cernterPositionMode: options.cernterPositionMode,
-            // };
-            // cacheMap[id] = dragSealResult;
             var _a = this._dragSealInfo, dragSealResult = _a._cacheResult, wrapperEle = _a.wrapperEle, sealInfo = _a.sealInfo, options = _a.options;
             this._dragSealResultCacheMapLen += 1;
             var thisInfo = {
@@ -119076,18 +119031,27 @@ var pdfParser = (function (documentReader) {
             var scale = this._._scaleGet();
             var top = parseInt(wrapperEle.style.top || "0");
             var left = parseInt(wrapperEle.style.left || "0");
-            var y = wrapperEle.parentElement.clientHeight - top;
             var x = left;
-            if (options.cernterPositionMode === "leftBottom") {
-                x -= wrapperEle.clientWidth / 2;
-                y -= wrapperEle.clientHeight / 2;
+            var y = wrapperEle.parentElement.clientHeight - top;
+            if (options.cernterPositionMode === "center") {
+                x += sealImgEle.width / 2;
+                y -= sealImgEle.height / 2;
             }
+            // if (options.cernterPositionMode === "center") {
+            //   x += sealImgEle.width / 2;
+            //   y -= sealImgEle.width / 2;
+            // }
+            // if (options.cernterPositionMode === "leftBottom") {
+            //   x -= wrapperEle.clientWidth / 2;
+            //   y -= wrapperEle.clientHeight / 2;
+            // }
             x /= scale;
             y /= scale;
             top += wrapperEle.clientHeight / 2;
             left += wrapperEle.clientWidth / 2;
             top /= scale;
             left /= scale;
+            console.log("left => ", left);
             var id = createId();
             var dragSealResult = {
                 _: {
