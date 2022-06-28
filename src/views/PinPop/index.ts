@@ -64,12 +64,7 @@ okBtnEle.onclick = async () => {
   res.resovle({ cancel: false, password: password });
 };
 
-export function showPinPopAndGetPassword(
-  rootEle?: HTMLElement
-): Promise<{
-  cancel: boolean;
-  password?: string;
-}> {
+export function showPinPopAndGetPassword( rootEle?: HTMLElement ): Promise<{ cancel: boolean; password?: string; }> {
   rootEle = rootEle || document.body;
   if (pinPopEle.parentElement !== rootEle) {
     rootEle.appendChild(pinPopEle);

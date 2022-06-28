@@ -1,0 +1,235 @@
+@signSealHeight: 557px;
+@signSealWidth: 460px;
+@titleHeight: 40px;
+@closeBtnSize: 18px;
+
+.certInfo {
+  position: fixed;
+  top: 240px;
+  bottom: 0;
+  left: 40%;
+  right: 0;
+  z-index: 99999999;
+  height: 328px;
+  width: 359px;
+  background-color: #fff;
+  box-shadow: 3px 2px 10px 1px rgba(0, 0, 0, 0.16);
+  .title {
+    height: 40px;
+    background: #2752e7;
+    color: #fff;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    padding-left: 16px;
+  }
+  .close {
+    position: absolute;
+    display: block;
+    right: 26px;
+    width: @closeBtnSize;
+    height: @closeBtnSize;
+    &:hover {
+      cursor: pointer;
+    }
+  }
+  .div {
+    display: flex;
+    flex-direction: row;
+    margin-top: 12px;
+    .left {
+      width: 130px;
+      text-align: right;
+      font-size: 14px;
+      margin-left: 30px;
+      font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+      font-weight: 400;
+      color: #333333;
+    }
+    .right {
+      text-align: left;
+      font-size: 14px;
+      margin-left: 2px;
+      font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+      font-weight: 400;
+      color: #333333;
+    }
+  }
+
+  .okBtn {
+    width: 99px;
+    height: 34px;
+    color: #fff;
+    display: flex;
+    position: absolute;
+    bottom: 30px;
+    right: 20px;
+    justify-content: center;
+    align-items: center;
+    background: #2752e7;
+    border-radius: 4px 4px 4px 4px;
+    opacity: 1;
+    &:hover {
+      cursor: pointer;
+    }
+  }
+}
+
+.maskContainer {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mask {
+  position: fixed;
+  top: 160px;
+  bottom: 0;
+  left: 37%;
+  right: 0;
+  z-index: 999;
+  height: @signSealHeight;
+  width: @signSealWidth;
+  background-color: #fff;
+  box-shadow: 3px 2px 10px 2px rgba(0, 0, 0, 0.16);
+  border-radius: 0px 0px 0px 0px;
+
+  &.hide {
+    display: none;
+  }
+
+  .title {
+    height: 40px;
+    background: #2752e7;
+    color: #fff;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    padding-left: 16px;
+  }
+  .close {
+    position: absolute;
+    display: block;
+    right: 26px;
+    width: @closeBtnSize;
+    height: @closeBtnSize;
+    &:hover {
+      cursor: pointer;
+    }
+  }
+  .content {
+    padding: 20px 20px;
+
+    .titleTip {
+      display: flex;
+      flex-direction: row;
+      .titleTipLeft {
+        height: 40px;
+        width: 40px;
+        background-image: url("../../../hh/error.png");
+        background-size: 100% 100%;
+      }
+      .titleTipRight {
+        display: flex;
+        flex-direction: column;
+        .top {
+          width: 197px;
+          height: 20px;
+          font-size: 16px;
+          font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+          font-weight: bold;
+          color: #333333;
+          line-height: 19px;
+        }
+        .bottom {
+          width: 379px;
+          height: 14px;
+          font-size: 12px;
+          font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+          font-weight: 400;
+          color: #999999;
+          line-height: 14px;
+        }
+      }
+    }
+
+    .tip {
+      height: 14px;
+      font-size: 12px;
+      font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+      font-weight: bold;
+      color: #2752e7;
+      line-height: 14px;
+      margin-top: 8px;
+    }
+    .sealInfo {
+      margin-top: 8px;
+      height: 14px;
+      margin-left: 42px;
+      font-size: 12px;
+      font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+      font-weight: 400;
+      color: #666666;
+      line-height: 14px;
+    }
+
+    .timeInfoLeft {
+      display: flex;
+      flex-direction: column;
+      .leftInfo {
+        height: 14px;
+        font-size: 12px;
+        margin-left: 40px;
+        margin-top: 8px;
+        font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+        font-weight: 400;
+        color: #666666;
+        line-height: 14px;
+      }
+    }
+
+    .btns {
+      padding: 12px 48px 10px 48px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn {
+      height: 27px;
+      background-color: #fff;
+      font-size: 12px;
+      font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;
+      font-weight: bold;
+      color: #2752e7;
+      border: 1px solid #2752e7;
+      border-radius: 6px;
+      &:hover {
+        cursor: pointer;
+      }
+    }
+
+    .okBtn {
+      width: 99px;
+      height: 34px;
+      color: #fff;
+      display: flex;
+      position: absolute;
+      bottom: 30px;
+      right: 20px;
+      justify-content: center;
+      align-items: center;
+      background: #2752e7;
+      border-radius: 4px 4px 4px 4px;
+      opacity: 1;
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  }
+}
