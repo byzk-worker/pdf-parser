@@ -11,7 +11,12 @@ export function createSealSampleEle(
   sealImgEle: HTMLImageElement;
   maskEle: HTMLElement;
 } {
-  const sealSampleEle = htmlTemplateConvertEle(htmlParser({ styles, imgUrl }));
+  return splitSealSampleEle(
+    htmlTemplateConvertEle(htmlParser({ styles, imgUrl }))
+  );
+}
+
+export function splitSealSampleEle(sealSampleEle: HTMLElement) {
   const sealImgEle = sealSampleEle.querySelector("img") as HTMLImageElement;
   const maskEle = sealSampleEle.querySelector(
     "." + styles.maskBgc

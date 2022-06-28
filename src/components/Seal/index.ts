@@ -9,12 +9,13 @@ import {
   SealDragOption,
   SealInfo,
 } from "@byzk/document-reader";
-import { createSealSampleEle } from "./views/SealSample";
-import { createMenu } from "../../views/Menu";
+import { createSealSampleEle, splitSealSampleEle } from "./views/SealSample";
+import { createMenu, MenuOption } from "../../views/Menu";
 import { createId } from "../../utils";
 
-const dragSealClickMenu = createMenu([]);
-const dragSealContextmenu = createMenu([]);
+// const dragSealClickMenu = createMenu([]);
+// const dragSealContextmenu = createMenu([]);
+// const multipageClickMenu = createMenu([]);
 
 interface PageSealInfo {
   rect: [number, number, number, number];
@@ -58,6 +59,22 @@ interface DragSealResultMap {
   [pageIndex: string]: { [id: string]: SealDragResultCache };
 }
 
+interface ManualPositionInfo {
+  /**
+   * 页码
+   */
+  pageNo: number;
+  /**
+   * 签章拖拽结果
+   */
+  sealDragResultCache: SealDragResultCache;
+  /**
+   * 状态
+   */
+  status: "no" | "drag" | "ok";
+  globalOptions?: SealDragOption;
+}
+
 function sealInfoRender(this: PageSealInfo) {
   const scale = this.scaleGet();
   const x = this.rect[0] * scale;
@@ -74,6 +91,8 @@ interface SealDragThisInfo {
   _: SealComponent;
   pageIndex: number;
   sealDragMaskEle: HTMLElement;
+  sealDragResultCache?: SealDragResultCache;
+  resultId?: string;
 }
 
 interface SealResultThisInfo {
@@ -82,7 +101,15 @@ interface SealResultThisInfo {
 }
 
 export class SealComponent implements PageComponentAttachInterface {
+  private _multipageClickMenu = createMenu([]);
+  private _dragSealClickMenu = createMenu([]);
+  private _dragSealContextmenu = createMenu([]);
+
+  private _manualPositionInfo: ManualPositionInfo | undefined;
+  private _manualMenuOptionId = createId();
+
   private _cancel: boolean = false;
+  private _isRight: boolean = false;
 
   private _pageEventList: { onmouseenter: any; onmouseleave: any }[] = [];
 
@@ -111,31 +138,52 @@ export class SealComponent implements PageComponentAttachInterface {
     this._menuOptionCancelClick = this._menuOptionCancelClick.bind(this);
     this._menuOptionContinueClick = this._menuOptionContinueClick.bind(this);
 
-    dragSealClickMenu.appendMenuOption({
+    const realCancel: MenuOption = {
       title: "取消签章",
-      click: this._menuOptionCancelClick,
+      click: (event) => {
+        this._cancel = true;
+        return this._menuOptionOkClick(event);
+      },
+    };
+
+    this._multipageClickMenu.appendMenuOption(realCancel);
+    this._multipageClickMenu.appendMenuOption({
+      id: this._manualMenuOptionId,
+      title: "继续调整",
+      click: this._menuOptionManualPositionClick.bind(this),
     });
-    dragSealClickMenu.appendMenuOption({
-      title: "继续签章",
-      click: this._menuOptionContinueClick,
-    });
-    dragSealClickMenu.appendMenuOption({
+    this._multipageClickMenu.appendMenuOption({
       title: "确认签章",
       click: (event) => {
         this._cancel = false;
         return this._menuOptionOkClick(event);
       },
     });
-    dragSealClickMenu.setDefaultClickEvent(this._menuOptionCancelClick);
 
-    dragSealContextmenu.appendMenuOption({
+    this._multipageClickMenu.hideOption(this._manualMenuOptionId);
+
+    this._dragSealClickMenu.appendMenuOption({
       title: "取消签章",
       click: (event) => {
-        this._cancel = true;
+        this._cancel = false;
+        return this._menuOptionCancelClick(event);
+      },
+    });
+    this._dragSealClickMenu.appendMenuOption({
+      title: "继续签章",
+      click: this._menuOptionContinueClick,
+    });
+    this._dragSealClickMenu.appendMenuOption({
+      title: "确认签章",
+      click: (event) => {
+        this._cancel = false;
         return this._menuOptionOkClick(event);
       },
     });
-    dragSealContextmenu.setDefaultClickEvent(this._menuOptionCancelClick);
+    this._dragSealClickMenu.setDefaultClickEvent(this._menuOptionCancelClick);
+
+    this._dragSealContextmenu.appendMenuOption(realCancel);
+    this._dragSealContextmenu.setDefaultClickEvent(this._menuOptionCancelClick);
   }
 
   /**
@@ -161,12 +209,49 @@ export class SealComponent implements PageComponentAttachInterface {
   }
 
   /**
+   * 继续调整按钮点击
+   * @param this 当前对象
+   * @param event 事件
+   */
+  private _menuOptionManualPositionClick(
+    this: SealComponent,
+    event: MouseEvent
+  ) {
+    if (!this._manualPositionInfo) {
+      return;
+    }
+
+    const {
+      wrapperEle,
+      sealImgEle,
+      maskEle,
+    } = this._manualPositionInfo.sealDragResultCache._;
+
+    this._manualPositionInfo.globalOptions = this._dragSealInfo.options;
+
+    this._dragSealInfo = {
+      ...this._dragSealInfo,
+      wrapperEle,
+      sealImgEle,
+      maskEle,
+      options: {
+        ...this._dragSealInfo.options,
+        pageNo: [this._manualPositionInfo.pageNo],
+      },
+    };
+    this._manualPositionInfo.status = "drag";
+    this._drageStatus = "drag";
+    this._dragMaskEle[this._manualPositionInfo.pageNo - 1].dispatchEvent(
+      new MouseEvent("mouseenter")
+    );
+  }
+
+  /**
    * 取消菜单点击
    * @param event 事件
    */
   private _menuOptionCancelClick(this: SealComponent, event: MouseEvent) {
-    debugger;
-    const { _cacheId, _cachePageIndexStr } = this._dragSealInfo;
+    const { _cacheId, _cachePageIndexStr, options } = this._dragSealInfo;
     const cacheMap = this._dragSealResultCacheMap[_cachePageIndexStr];
     if (cacheMap) {
       delete cacheMap[_cacheId];
@@ -253,10 +338,22 @@ export class SealComponent implements PageComponentAttachInterface {
   private _pageOnMouseEnter(this: SealDragThisInfo, event: MouseEvent) {
     if (this._._drageStatus === "no") {
       this.sealDragMaskEle.style.zIndex = "0";
-    } else {
-      this._._dragSealInfo.pageIndex = this.pageIndex;
-      this.sealDragMaskEle.style.zIndex = "999999";
+      return;
     }
+
+    const dragSealInfo = this._._dragSealInfo;
+    if (!dragSealInfo) {
+      return;
+    }
+
+    const allowPageNoList = dragSealInfo.options.pageNo || [];
+    if (!allowPageNoList.includes(this.pageIndex)) {
+      this.sealDragMaskEle.style.zIndex = "0";
+      return;
+    }
+
+    this._._dragSealInfo.pageIndex = this.pageIndex;
+    this.sealDragMaskEle.style.zIndex = "999999";
   }
 
   /**
@@ -308,10 +405,21 @@ export class SealComponent implements PageComponentAttachInterface {
 
     const { sealInfo, wrapperEle } = dragSealInfo;
 
-    wrapperEle.onclick = this._._dragSealClick.bind(this);
-    wrapperEle.oncontextmenu = this._._dragSealClick.bind(
-      Object.assign({}, this, { isRight: true })
-    );
+    wrapperEle.onclick = (event) => {
+      this._._isRight = false;
+      return this._._dragSealClick.call(this, event);
+    };
+
+    if (dragSealInfo.options.mode === "default") {
+      wrapperEle.oncontextmenu = (event) => {
+        this._._isRight = true;
+        return this._._dragSealClick.call(this, event);
+      };
+    }
+
+    // this._._dragSealClick.bind(
+    //   Object.assign({}, this, { isRight: true })
+    // );
 
     const wrapperStyles = wrapperEle.style;
     wrapperStyles.display = "block";
@@ -361,26 +469,43 @@ export class SealComponent implements PageComponentAttachInterface {
     }
   }
 
+  private _maskMouseClick(this: SealDragThisInfo, event: MouseEvent) {
+    if (
+      this._._multipageClickMenu.isShow() ||
+      !this._._dragSealInfo ||
+      this._._dragSealInfo.options.mode === "default" ||
+      this._._dragSealInfo.options.allowManualPosition
+    ) {
+      return;
+    }
+    event.stopImmediatePropagation && event.stopImmediatePropagation();
+    event.stopPropagation && event.stopPropagation();
+
+    const rootEle = this._._appGet().getRootEle() || document.body;
+    const { top, left } = rootEle.getBoundingClientRect();
+    const x = event.x - left;
+    const y = event.y - top;
+    if (this._._dragSealInfo.options.allowManualPosition) {
+      this._._multipageClickMenu.showOption(this._._manualMenuOptionId);
+    } else {
+      this._._multipageClickMenu.hideOption(this._._manualMenuOptionId);
+    }
+    this._._multipageClickMenu.show(x, y, rootEle);
+  }
+
   /**
    * 拖拽印章鼠标单击事件
    * @param this this指向
    * @param event 事件
    */
-  private _dragSealClick(
-    this: SealDragThisInfo & { isRight: boolean },
-    event: MouseEvent
-  ) {
+  private _dragSealClick(this: SealDragThisInfo, event: MouseEvent) {
     this._._drageStatus = "confirm";
 
+    const pageIndex = this.pageIndex;
     const dragSealInfo = this._._dragSealInfo;
-    const {
-      pageIndex,
-      sealInfo,
-      options,
-      wrapperEle,
-      sealImgEle,
-      maskEle,
-    } = dragSealInfo;
+    const { sealInfo, options, wrapperEle, sealImgEle, maskEle } = dragSealInfo;
+
+    console.log(pageIndex);
     const pageIndexStr = pageIndex + "";
     let cacheMap = this._._dragSealResultCacheMap[pageIndexStr];
     if (!cacheMap) {
@@ -401,16 +526,6 @@ export class SealComponent implements PageComponentAttachInterface {
       y -= sealImgEle.height / 2;
     }
 
-    // if (options.cernterPositionMode === "center") {
-    //   x += sealImgEle.width / 2;
-    //   y -= sealImgEle.width / 2;
-    // }
-
-    // if (options.cernterPositionMode === "leftBottom") {
-    //   x -= wrapperEle.clientWidth / 2;
-    //   y -= wrapperEle.clientHeight / 2;
-    // }
-
     x /= scale;
     y /= scale;
     top += wrapperEle.clientHeight / 2;
@@ -419,7 +534,7 @@ export class SealComponent implements PageComponentAttachInterface {
     left /= scale;
 
     const id = createId();
-    const dragSealResult: SealDragResultCache = {
+    let dragSealResult: SealDragResultCache = {
       _: {
         id,
         top,
@@ -435,17 +550,112 @@ export class SealComponent implements PageComponentAttachInterface {
       cernterPositionMode: options.cernterPositionMode,
     };
 
-    cacheMap[id] = dragSealResult;
-    this._._dragSealResultCacheMapLen += 1;
+    if (dragSealInfo.options.mode === "default") {
+      cacheMap[id] = dragSealResult;
+      this._._dragSealResultCacheMapLen += 1;
+    } else if (dragSealInfo.options.mode === "multipage") {
+      if (
+        this._._manualPositionInfo &&
+        this._._manualPositionInfo.status === "drag"
+      ) {
+        const thisInfo: SealDragThisInfo = {
+          _: this._,
+          pageIndex: pageIndex,
+          sealDragMaskEle: this.sealDragMaskEle,
+          sealDragResultCache: dragSealResult,
+          resultId: id,
+        };
+        dragSealResult._.wrapperEle.onclick = this._._dragSealMouseClick.bind(
+          thisInfo
+        );
+        dragSealResult._.id = this._._manualPositionInfo.sealDragResultCache._.id;
+        Object.assign(
+          this._._manualPositionInfo.sealDragResultCache,
+          dragSealResult
+        );
+        dragSealInfo.options = this._._manualPositionInfo.globalOptions;
+        this._._manualPositionInfo.status = "no";
+      } else {
+        const pageNoList = dragSealInfo.options.pageNo;
+        const { wrapperEle: srcWrapperEle, top, left } = dragSealResult._;
+        srcWrapperEle.remove();
+
+        for (let i = 0; i < pageNoList.length; i++) {
+          const pageNo = pageNoList[i];
+          const wrapperIndex = pageNo - 1;
+          const wrapperMaskEle = this._._dragMaskEle[wrapperIndex];
+          if (!wrapperMaskEle) {
+            continue;
+          }
+
+          const id = createId();
+          // wrapperEle.style.top = srcWrapperEle.style.top;
+          // wrapperEle.style.left = srcWrapperEle.style.left;
+          const cloneWrapperEle = srcWrapperEle.cloneNode(true) as HTMLElement;
+          wrapperMaskEle.appendChild(cloneWrapperEle);
+
+          const { wrapperEle, sealImgEle, maskEle } = splitSealSampleEle(
+            cloneWrapperEle
+          );
+
+          const cacheResult: SealDragResultCache = {
+            ...dragSealResult,
+            _: {
+              id,
+              top,
+              left,
+              wrapperEle,
+              sealImgEle,
+              maskEle,
+            },
+            pageNo: wrapperIndex + 1,
+          };
+
+          if (pageNo === dragSealResult.pageNo) {
+            dragSealResult = cacheResult;
+            this._._manualPositionInfo = {
+              pageNo,
+              sealDragResultCache: cacheResult,
+              status: "no",
+            };
+          }
+
+          const thisInfo: SealDragThisInfo = {
+            _: this._,
+            pageIndex: pageNo,
+            sealDragMaskEle: wrapperMaskEle,
+            sealDragResultCache: cacheResult,
+            resultId: id,
+          };
+          wrapperEle.onclick = this._._dragSealMouseClick.bind(thisInfo);
+
+          let cacheMap = this._._dragSealResultCacheMap[pageNo + ""];
+          if (!cacheMap) {
+            cacheMap = {};
+            this._._dragSealResultCacheMap[pageNo + ""] = cacheMap;
+          }
+          cacheMap[id] = cacheResult;
+          this._._dragSealResultCacheMapLen += 1;
+        }
+      }
+    }
+
     dragSealInfo._cacheResult = dragSealResult;
     dragSealInfo._cachePageIndexStr = pageIndexStr;
     dragSealInfo._cacheId = id;
 
     const rootEle = this._._appGet().getRootEle() || document.body;
     const { top: _top, left: _left } = rootEle.getBoundingClientRect();
-    let dragMenu = dragSealClickMenu;
-    if (this.isRight) {
-      dragMenu = dragSealContextmenu;
+    let dragMenu = this._._dragSealClickMenu;
+    if (dragSealInfo.options.mode === "multipage") {
+      dragMenu = this._._multipageClickMenu;
+      if (this._._dragSealInfo.options.allowManualPosition) {
+        this._._multipageClickMenu.showOption(this._._manualMenuOptionId);
+      } else {
+        this._._multipageClickMenu.hideOption(this._._manualMenuOptionId);
+      }
+    } else if (this._._isRight) {
+      dragMenu = this._._dragSealContextmenu;
     }
     dragMenu.show(event.x - _left, event.y - _top, rootEle);
   }
@@ -458,16 +668,62 @@ export class SealComponent implements PageComponentAttachInterface {
     this._._dragSealInfo.wrapperEle.style.display = "block";
   }
 
+  private _dragDocumentMousemove(this: DragSealInfo, event: MouseEvent) {}
+
   private _dragSealMouseClick(this: SealDragThisInfo, event: MouseEvent) {
     event.stopImmediatePropagation && event.stopImmediatePropagation();
     event.stopPropagation && event.stopPropagation();
+
+    const dragSealInfo = this._._dragSealInfo;
+    if (!dragSealInfo || dragSealInfo.options.mode === "default") {
+      return;
+    }
+
+    const rootEle = this._._appGet().getRootEle();
+    const { top, left } = rootEle.getBoundingClientRect();
+    const x = event.x - left;
+    const y = event.y - top;
+    if (
+      dragSealInfo.options.mode === "multipage" &&
+      !this._._multipageClickMenu.isShow()
+    ) {
+      if (this._._dragSealInfo.options.allowManualPosition) {
+        this._._multipageClickMenu.showOption(this._._manualMenuOptionId);
+      } else {
+        this._._multipageClickMenu.hideOption(this._._manualMenuOptionId);
+      }
+      this._._multipageClickMenu.show(x, y, rootEle);
+      this._._manualPositionInfo = {
+        pageNo: this.pageIndex,
+        sealDragResultCache: this.sealDragResultCache!,
+        status: "no",
+      };
+      return;
+    }
   }
 
-  private _dragSealContextmenu(this: SealDragThisInfo, event: MouseEvent) {
-    const rootEle = this._._appGet().getRootEle() || document.body;
-    const { top: _top, left: _left } = rootEle.getBoundingClientRect();
-    dragSealContextmenu.show(event.x - _left, event.y - _top, rootEle);
-  }
+  // private _drageSealMouseDown(this: SealDragThisInfo, event: MouseEvent) {
+  //   const dragSealInfo = this._._dragSealInfo;
+  //   if (
+  //     !dragSealInfo ||
+  //     dragSealInfo.options.mode === "default" ||
+  //     !dragSealInfo.options.allowManualPosition
+  //   ) {
+  //     return;
+  //   }
+  //   const self = this as any;
+  //   self.mouseMoveEvent = this._._dragDocumentMousemove.bind(this);
+  //   self.mouseUpEvent = this._._dragSealMouseUp.bind(this);
+  //   this.sealDragMaskEle.addEventListener("mousemove", self.mouseMoveEvent);
+  //   document.addEventListener("mouseup", self.mouseUpEvent);
+  // }
+
+  // private _dragSealMouseUp(this: SealDragThisInfo, event: MouseEvent) {
+  //   const self = this as any;
+  //   debugger;
+  //   this.sealDragMaskEle.removeEventListener("mousemove", self.mouseMoveEvent);
+  //   document.removeEventListener("mouseup", self.mouseUpEvent);
+  // }
 
   attachRunInit(): boolean {
     return false;
@@ -508,6 +764,8 @@ export class SealComponent implements PageComponentAttachInterface {
       maskWrapperEle.onmouseenter = this._maskMouseEnter.bind(dragEventThis);
       maskWrapperEle.onmousemove = this._maskMouseMove.bind(dragEventThis);
       maskWrapperEle.onmouseleave = this._maskMouseLeave.bind(dragEventThis);
+      maskWrapperEle.onclick = this._maskMouseClick.bind(dragEventThis);
+
       const pageMouseEnterEvent = this._pageOnMouseEnter.bind(dragEventThis);
       const pageMouseLeaveEvent = this._pageOnMouseLeave.bind(dragEventThis);
       this._pageEventList[pageIndex - 1] = {
@@ -586,7 +844,7 @@ export class SealComponent implements PageComponentAttachInterface {
     }
 
     if (typeof options.allowManualPosition !== "boolean") {
-      options.allowManualPosition = true;
+      options.allowManualPosition = false;
     }
 
     if (typeof options.minPageNo !== "number") {
