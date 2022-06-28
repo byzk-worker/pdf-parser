@@ -34,7 +34,7 @@ import {showSignSealTip} from "./views/SignSeal";
 
 let signSealTime:any=[{},{},{},{},{}]
 
-showSignSealTip(document.body,signSealTime)
+// showSignSealTip(document.body,signSealTime)
 
 const lock = new AsyncLock();
 
