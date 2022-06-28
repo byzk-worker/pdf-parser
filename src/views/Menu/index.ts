@@ -9,6 +9,10 @@ export interface MenuOption {
 
 export interface MenuOperationInterface {
   /**
+   * 是否已经显示
+   */
+  isShow(): boolean;
+  /**
    *
    * @param x x坐标
    * @param y y坐标
@@ -16,9 +20,19 @@ export interface MenuOperationInterface {
    */
   show(x: number, y: number, ele?: HTMLElement): void;
   /**
+   * 显示选项
+   * @param ids 要显示的列表
+   */
+  showOption(...ids: string[]): void;
+  /**
    * 隐藏菜单
    */
   hide(): void;
+  /**
+   * 隐藏选项
+   * @param id 选项Id
+   */
+  hideOption(...id: string[]): void;
   /**
    * 销毁菜单
    */
@@ -76,7 +90,9 @@ export class MenuOperationImpl implements MenuOperationInterface {
    * @returns 拼接完成的id
    */
   private _joinId(id: string): string {
-    return this._menuId + "_" + id;
+    id = this._menuId + "_" + id;
+    id = id.replace(/\./gi, "");
+    return "_" + id;
   }
 
   private _documentClickHide(event: MouseEvent) {
@@ -192,6 +208,34 @@ export class MenuOperationImpl implements MenuOperationInterface {
    */
   public setDefaultClickEvent(fn: (event: MouseEvent) => void): void {
     this._defaultClick = fn;
+  }
+
+  /**
+   * 是否已经显示
+   * @returns 是/否
+   */
+  public isShow(): boolean {
+    return this._menuEle.style.display === "block";
+  }
+  public hideOption(...ids: string[]): void {
+    for (let id of ids) {
+      const target = this._menuEle.querySelector(
+        "#" + this._joinId(id)
+      ) as HTMLElement;
+      if (target) {
+        target.style.display = "none";
+      }
+    }
+  }
+  public showOption(...ids: string[]): void {
+    for (let id of ids) {
+      const target = this._menuEle.querySelector(
+        "#" + this._joinId(id)
+      ) as HTMLElement;
+      if (target) {
+        target.style.display = "block";
+      }
+    }
   }
 }
 

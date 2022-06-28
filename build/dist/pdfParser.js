@@ -118627,7 +118627,9 @@ var pdfParser = (function (documentReader) {
 
     var htmlParser = htmlTemplateParser$1(htmlStr$1);
     function createSealSampleEle(imgUrl) {
-        var sealSampleEle = htmlTemplateConvertEle(htmlParser({ styles: styles$2, imgUrl: imgUrl }));
+        return splitSealSampleEle(htmlTemplateConvertEle(htmlParser({ styles: styles$2, imgUrl: imgUrl })));
+    }
+    function splitSealSampleEle(sealSampleEle) {
         var sealImgEle = sealSampleEle.querySelector("img");
         var maskEle = sealSampleEle.querySelector("." + styles$2.maskBgc);
         return {
@@ -118674,7 +118676,9 @@ var pdfParser = (function (documentReader) {
          * @returns 拼接完成的id
          */
         MenuOperationImpl.prototype._joinId = function (id) {
-            return this._menuId + "_" + id;
+            id = this._menuId + "_" + id;
+            id = id.replace(/\./gi, "");
+            return "_" + id;
         };
         MenuOperationImpl.prototype._documentClickHide = function (event) {
             document.removeEventListener("mousedown", this._documentClickHide);
@@ -118788,6 +118792,39 @@ var pdfParser = (function (documentReader) {
         MenuOperationImpl.prototype.setDefaultClickEvent = function (fn) {
             this._defaultClick = fn;
         };
+        /**
+         * 是否已经显示
+         * @returns 是/否
+         */
+        MenuOperationImpl.prototype.isShow = function () {
+            return this._menuEle.style.display === "block";
+        };
+        MenuOperationImpl.prototype.hideOption = function () {
+            var ids = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                ids[_i] = arguments[_i];
+            }
+            for (var _a = 0, ids_1 = ids; _a < ids_1.length; _a++) {
+                var id = ids_1[_a];
+                var target = this._menuEle.querySelector("#" + this._joinId(id));
+                if (target) {
+                    target.style.display = "none";
+                }
+            }
+        };
+        MenuOperationImpl.prototype.showOption = function () {
+            var ids = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                ids[_i] = arguments[_i];
+            }
+            for (var _a = 0, ids_2 = ids; _a < ids_2.length; _a++) {
+                var id = ids_2[_a];
+                var target = this._menuEle.querySelector("#" + this._joinId(id));
+                if (target) {
+                    target.style.display = "block";
+                }
+            }
+        };
         return MenuOperationImpl;
     }());
     /**
@@ -118801,8 +118838,6 @@ var pdfParser = (function (documentReader) {
         return menuOperationImpl;
     }
 
-    var dragSealClickMenu = createMenu([]);
-    var dragSealContextmenu = createMenu([]);
     function sealInfoRender() {
         var scale = this.scaleGet();
         var x = this.rect[0] * scale;
@@ -118819,7 +118854,12 @@ var pdfParser = (function (documentReader) {
             this._pageComponent = _pageComponent;
             this._scaleGet = _scaleGet;
             this._appGet = _appGet;
+            this._multipageClickMenu = createMenu([]);
+            this._dragSealClickMenu = createMenu([]);
+            this._dragSealContextmenu = createMenu([]);
+            this._manualMenuOptionId = createId();
             this._cancel = false;
+            this._isRight = false;
             this._pageEventList = [];
             this._pageSealInfoMap = {};
             this._dragMaskEle = [];
@@ -118827,30 +118867,48 @@ var pdfParser = (function (documentReader) {
             this._drageStatus = "no";
             this._menuOptionCancelClick = this._menuOptionCancelClick.bind(this);
             this._menuOptionContinueClick = this._menuOptionContinueClick.bind(this);
-            dragSealClickMenu.appendMenuOption({
+            var realCancel = {
                 title: "取消签章",
-                click: this._menuOptionCancelClick
+                click: function (event) {
+                    _this._cancel = true;
+                    return _this._menuOptionOkClick(event);
+                }
+            };
+            this._multipageClickMenu.appendMenuOption(realCancel);
+            this._multipageClickMenu.appendMenuOption({
+                id: this._manualMenuOptionId,
+                title: "继续调整",
+                click: this._menuOptionManualPositionClick.bind(this)
             });
-            dragSealClickMenu.appendMenuOption({
-                title: "继续签章",
-                click: this._menuOptionContinueClick
-            });
-            dragSealClickMenu.appendMenuOption({
+            this._multipageClickMenu.appendMenuOption({
                 title: "确认签章",
                 click: function (event) {
                     _this._cancel = false;
                     return _this._menuOptionOkClick(event);
                 }
             });
-            dragSealClickMenu.setDefaultClickEvent(this._menuOptionCancelClick);
-            dragSealContextmenu.appendMenuOption({
+            this._multipageClickMenu.hideOption(this._manualMenuOptionId);
+            this._dragSealClickMenu.appendMenuOption({
                 title: "取消签章",
                 click: function (event) {
-                    _this._cancel = true;
+                    _this._cancel = false;
+                    return _this._menuOptionCancelClick(event);
+                }
+            });
+            this._dragSealClickMenu.appendMenuOption({
+                title: "继续签章",
+                click: this._menuOptionContinueClick
+            });
+            this._dragSealClickMenu.appendMenuOption({
+                title: "确认签章",
+                click: function (event) {
+                    _this._cancel = false;
                     return _this._menuOptionOkClick(event);
                 }
             });
-            dragSealContextmenu.setDefaultClickEvent(this._menuOptionCancelClick);
+            this._dragSealClickMenu.setDefaultClickEvent(this._menuOptionCancelClick);
+            this._dragSealContextmenu.appendMenuOption(realCancel);
+            this._dragSealContextmenu.setDefaultClickEvent(this._menuOptionCancelClick);
         }
         /**
          * 缩放改变
@@ -118874,13 +118932,28 @@ var pdfParser = (function (documentReader) {
             }
         };
         /**
+         * 继续调整按钮点击
+         * @param this 当前对象
+         * @param event 事件
+         */
+        SealComponent.prototype._menuOptionManualPositionClick = function (event) {
+            if (!this._manualPositionInfo) {
+                return;
+            }
+            var _a = this._manualPositionInfo.sealDragResultCache._, wrapperEle = _a.wrapperEle, sealImgEle = _a.sealImgEle, maskEle = _a.maskEle;
+            this._manualPositionInfo.globalOptions = this._dragSealInfo.options;
+            this._dragSealInfo = __assign(__assign({}, this._dragSealInfo), { wrapperEle: wrapperEle, sealImgEle: sealImgEle, maskEle: maskEle, options: __assign(__assign({}, this._dragSealInfo.options), { pageNo: [this._manualPositionInfo.pageNo] }) });
+            this._manualPositionInfo.status = "drag";
+            this._drageStatus = "drag";
+            this._dragMaskEle[this._manualPositionInfo.pageNo - 1].dispatchEvent(new MouseEvent("mouseenter"));
+        };
+        /**
          * 取消菜单点击
          * @param event 事件
          */
         SealComponent.prototype._menuOptionCancelClick = function (event) {
             var _a;
-            debugger;
-            var _b = this._dragSealInfo, _cacheId = _b._cacheId, _cachePageIndexStr = _b._cachePageIndexStr;
+            var _b = this._dragSealInfo, _cacheId = _b._cacheId, _cachePageIndexStr = _b._cachePageIndexStr; _b.options;
             var cacheMap = this._dragSealResultCacheMap[_cachePageIndexStr];
             if (cacheMap) {
                 delete cacheMap[_cacheId];
@@ -118953,11 +119026,19 @@ var pdfParser = (function (documentReader) {
         SealComponent.prototype._pageOnMouseEnter = function (event) {
             if (this._._drageStatus === "no") {
                 this.sealDragMaskEle.style.zIndex = "0";
+                return;
             }
-            else {
-                this._._dragSealInfo.pageIndex = this.pageIndex;
-                this.sealDragMaskEle.style.zIndex = "999999";
+            var dragSealInfo = this._._dragSealInfo;
+            if (!dragSealInfo) {
+                return;
             }
+            var allowPageNoList = dragSealInfo.options.pageNo || [];
+            if (!allowPageNoList.includes(this.pageIndex)) {
+                this.sealDragMaskEle.style.zIndex = "0";
+                return;
+            }
+            this._._dragSealInfo.pageIndex = this.pageIndex;
+            this.sealDragMaskEle.style.zIndex = "999999";
         };
         /**
          * 页面鼠标离开事件
@@ -118990,6 +119071,7 @@ var pdfParser = (function (documentReader) {
          * @param event 事件
          */
         SealComponent.prototype._maskMouseEnter = function (event) {
+            var _this = this;
             var self = this._;
             if (self._drageStatus !== "drag") {
                 return;
@@ -118998,8 +119080,19 @@ var pdfParser = (function (documentReader) {
             var targetEle = event.target;
             var scale = this._._scaleGet();
             var sealInfo = dragSealInfo.sealInfo, wrapperEle = dragSealInfo.wrapperEle;
-            wrapperEle.onclick = this._._dragSealClick.bind(this);
-            wrapperEle.oncontextmenu = this._._dragSealClick.bind(Object.assign({}, this, { isRight: true }));
+            wrapperEle.onclick = function (event) {
+                _this._._isRight = false;
+                return _this._._dragSealClick.call(_this, event);
+            };
+            if (dragSealInfo.options.mode === "default") {
+                wrapperEle.oncontextmenu = function (event) {
+                    _this._._isRight = true;
+                    return _this._._dragSealClick.call(_this, event);
+                };
+            }
+            // this._._dragSealClick.bind(
+            //   Object.assign({}, this, { isRight: true })
+            // );
             var wrapperStyles = wrapperEle.style;
             wrapperStyles.display = "block";
             wrapperStyles.width = sealInfo.width + "px";
@@ -119032,6 +119125,27 @@ var pdfParser = (function (documentReader) {
                 this._._dragSealInfo.wrapperEle.style.display = "none";
             }
         };
+        SealComponent.prototype._maskMouseClick = function (event) {
+            if (this._._multipageClickMenu.isShow() ||
+                !this._._dragSealInfo ||
+                this._._dragSealInfo.options.mode === "default" ||
+                this._._dragSealInfo.options.allowManualPosition) {
+                return;
+            }
+            event.stopImmediatePropagation && event.stopImmediatePropagation();
+            event.stopPropagation && event.stopPropagation();
+            var rootEle = this._._appGet().getRootEle() || document.body;
+            var _a = rootEle.getBoundingClientRect(), top = _a.top, left = _a.left;
+            var x = event.x - left;
+            var y = event.y - top;
+            if (this._._dragSealInfo.options.allowManualPosition) {
+                this._._multipageClickMenu.showOption(this._._manualMenuOptionId);
+            }
+            else {
+                this._._multipageClickMenu.hideOption(this._._manualMenuOptionId);
+            }
+            this._._multipageClickMenu.show(x, y, rootEle);
+        };
         /**
          * 拖拽印章鼠标单击事件
          * @param this this指向
@@ -119039,8 +119153,10 @@ var pdfParser = (function (documentReader) {
          */
         SealComponent.prototype._dragSealClick = function (event) {
             this._._drageStatus = "confirm";
+            var pageIndex = this.pageIndex;
             var dragSealInfo = this._._dragSealInfo;
-            var pageIndex = dragSealInfo.pageIndex, sealInfo = dragSealInfo.sealInfo, options = dragSealInfo.options, wrapperEle = dragSealInfo.wrapperEle, sealImgEle = dragSealInfo.sealImgEle, maskEle = dragSealInfo.maskEle;
+            var sealInfo = dragSealInfo.sealInfo, options = dragSealInfo.options, wrapperEle = dragSealInfo.wrapperEle, sealImgEle = dragSealInfo.sealImgEle, maskEle = dragSealInfo.maskEle;
+            console.log(pageIndex);
             var pageIndexStr = pageIndex + "";
             var cacheMap = this._._dragSealResultCacheMap[pageIndexStr];
             if (!cacheMap) {
@@ -119056,14 +119172,6 @@ var pdfParser = (function (documentReader) {
                 x += sealImgEle.width / 2;
                 y -= sealImgEle.height / 2;
             }
-            // if (options.cernterPositionMode === "center") {
-            //   x += sealImgEle.width / 2;
-            //   y -= sealImgEle.width / 2;
-            // }
-            // if (options.cernterPositionMode === "leftBottom") {
-            //   x -= wrapperEle.clientWidth / 2;
-            //   y -= wrapperEle.clientHeight / 2;
-            // }
             x /= scale;
             y /= scale;
             top += wrapperEle.clientHeight / 2;
@@ -119086,16 +119194,94 @@ var pdfParser = (function (documentReader) {
                 y: y,
                 cernterPositionMode: options.cernterPositionMode
             };
-            cacheMap[id] = dragSealResult;
-            this._._dragSealResultCacheMapLen += 1;
+            if (dragSealInfo.options.mode === "default") {
+                cacheMap[id] = dragSealResult;
+                this._._dragSealResultCacheMapLen += 1;
+            }
+            else if (dragSealInfo.options.mode === "multipage") {
+                if (this._._manualPositionInfo &&
+                    this._._manualPositionInfo.status === "drag") {
+                    var thisInfo = {
+                        _: this._,
+                        pageIndex: pageIndex,
+                        sealDragMaskEle: this.sealDragMaskEle,
+                        sealDragResultCache: dragSealResult,
+                        resultId: id
+                    };
+                    dragSealResult._.wrapperEle.onclick = this._._dragSealMouseClick.bind(thisInfo);
+                    dragSealResult._.id = this._._manualPositionInfo.sealDragResultCache._.id;
+                    Object.assign(this._._manualPositionInfo.sealDragResultCache, dragSealResult);
+                    dragSealInfo.options = this._._manualPositionInfo.globalOptions;
+                    this._._manualPositionInfo.status = "no";
+                }
+                else {
+                    var pageNoList = dragSealInfo.options.pageNo;
+                    var _a = dragSealResult._, srcWrapperEle = _a.wrapperEle, top_2 = _a.top, left_1 = _a.left;
+                    srcWrapperEle.remove();
+                    for (var i = 0; i < pageNoList.length; i++) {
+                        var pageNo = pageNoList[i];
+                        var wrapperIndex = pageNo - 1;
+                        var wrapperMaskEle = this._._dragMaskEle[wrapperIndex];
+                        if (!wrapperMaskEle) {
+                            continue;
+                        }
+                        var id_1 = createId();
+                        // wrapperEle.style.top = srcWrapperEle.style.top;
+                        // wrapperEle.style.left = srcWrapperEle.style.left;
+                        var cloneWrapperEle = srcWrapperEle.cloneNode(true);
+                        wrapperMaskEle.appendChild(cloneWrapperEle);
+                        var _b = splitSealSampleEle(cloneWrapperEle), wrapperEle_1 = _b.wrapperEle, sealImgEle_1 = _b.sealImgEle, maskEle_1 = _b.maskEle;
+                        var cacheResult = __assign(__assign({}, dragSealResult), { _: {
+                                id: id_1,
+                                top: top_2,
+                                left: left_1,
+                                wrapperEle: wrapperEle_1,
+                                sealImgEle: sealImgEle_1,
+                                maskEle: maskEle_1
+                            }, pageNo: wrapperIndex + 1 });
+                        if (pageNo === dragSealResult.pageNo) {
+                            dragSealResult = cacheResult;
+                            this._._manualPositionInfo = {
+                                pageNo: pageNo,
+                                sealDragResultCache: cacheResult,
+                                status: "no"
+                            };
+                        }
+                        var thisInfo = {
+                            _: this._,
+                            pageIndex: pageNo,
+                            sealDragMaskEle: wrapperMaskEle,
+                            sealDragResultCache: cacheResult,
+                            resultId: id_1
+                        };
+                        wrapperEle_1.onclick = this._._dragSealMouseClick.bind(thisInfo);
+                        var cacheMap_1 = this._._dragSealResultCacheMap[pageNo + ""];
+                        if (!cacheMap_1) {
+                            cacheMap_1 = {};
+                            this._._dragSealResultCacheMap[pageNo + ""] = cacheMap_1;
+                        }
+                        cacheMap_1[id_1] = cacheResult;
+                        this._._dragSealResultCacheMapLen += 1;
+                    }
+                }
+            }
             dragSealInfo._cacheResult = dragSealResult;
             dragSealInfo._cachePageIndexStr = pageIndexStr;
             dragSealInfo._cacheId = id;
             var rootEle = this._._appGet().getRootEle() || document.body;
-            var _a = rootEle.getBoundingClientRect(), _top = _a.top, _left = _a.left;
-            var dragMenu = dragSealClickMenu;
-            if (this.isRight) {
-                dragMenu = dragSealContextmenu;
+            var _c = rootEle.getBoundingClientRect(), _top = _c.top, _left = _c.left;
+            var dragMenu = this._._dragSealClickMenu;
+            if (dragSealInfo.options.mode === "multipage") {
+                dragMenu = this._._multipageClickMenu;
+                if (this._._dragSealInfo.options.allowManualPosition) {
+                    this._._multipageClickMenu.showOption(this._._manualMenuOptionId);
+                }
+                else {
+                    this._._multipageClickMenu.hideOption(this._._manualMenuOptionId);
+                }
+            }
+            else if (this._._isRight) {
+                dragMenu = this._._dragSealContextmenu;
             }
             dragMenu.show(event.x - _left, event.y - _top, rootEle);
         };
@@ -119105,15 +119291,56 @@ var pdfParser = (function (documentReader) {
         SealComponent.prototype._dragSealMouseLeave = function (event) {
             this._._dragSealInfo.wrapperEle.style.display = "block";
         };
+        SealComponent.prototype._dragDocumentMousemove = function (event) { };
         SealComponent.prototype._dragSealMouseClick = function (event) {
             event.stopImmediatePropagation && event.stopImmediatePropagation();
             event.stopPropagation && event.stopPropagation();
+            var dragSealInfo = this._._dragSealInfo;
+            if (!dragSealInfo || dragSealInfo.options.mode === "default") {
+                return;
+            }
+            var rootEle = this._._appGet().getRootEle();
+            var _a = rootEle.getBoundingClientRect(), top = _a.top, left = _a.left;
+            var x = event.x - left;
+            var y = event.y - top;
+            if (dragSealInfo.options.mode === "multipage" &&
+                !this._._multipageClickMenu.isShow()) {
+                if (this._._dragSealInfo.options.allowManualPosition) {
+                    this._._multipageClickMenu.showOption(this._._manualMenuOptionId);
+                }
+                else {
+                    this._._multipageClickMenu.hideOption(this._._manualMenuOptionId);
+                }
+                this._._multipageClickMenu.show(x, y, rootEle);
+                this._._manualPositionInfo = {
+                    pageNo: this.pageIndex,
+                    sealDragResultCache: this.sealDragResultCache,
+                    status: "no"
+                };
+                return;
+            }
         };
-        SealComponent.prototype._dragSealContextmenu = function (event) {
-            var rootEle = this._._appGet().getRootEle() || document.body;
-            var _a = rootEle.getBoundingClientRect(), _top = _a.top, _left = _a.left;
-            dragSealContextmenu.show(event.x - _left, event.y - _top, rootEle);
-        };
+        // private _drageSealMouseDown(this: SealDragThisInfo, event: MouseEvent) {
+        //   const dragSealInfo = this._._dragSealInfo;
+        //   if (
+        //     !dragSealInfo ||
+        //     dragSealInfo.options.mode === "default" ||
+        //     !dragSealInfo.options.allowManualPosition
+        //   ) {
+        //     return;
+        //   }
+        //   const self = this as any;
+        //   self.mouseMoveEvent = this._._dragDocumentMousemove.bind(this);
+        //   self.mouseUpEvent = this._._dragSealMouseUp.bind(this);
+        //   this.sealDragMaskEle.addEventListener("mousemove", self.mouseMoveEvent);
+        //   document.addEventListener("mouseup", self.mouseUpEvent);
+        // }
+        // private _dragSealMouseUp(this: SealDragThisInfo, event: MouseEvent) {
+        //   const self = this as any;
+        //   debugger;
+        //   this.sealDragMaskEle.removeEventListener("mousemove", self.mouseMoveEvent);
+        //   document.removeEventListener("mouseup", self.mouseUpEvent);
+        // }
         SealComponent.prototype.attachRunInit = function () {
             return false;
         };
@@ -119144,6 +119371,7 @@ var pdfParser = (function (documentReader) {
                                 maskWrapperEle.onmouseenter = this._maskMouseEnter.bind(dragEventThis);
                                 maskWrapperEle.onmousemove = this._maskMouseMove.bind(dragEventThis);
                                 maskWrapperEle.onmouseleave = this._maskMouseLeave.bind(dragEventThis);
+                                maskWrapperEle.onclick = this._maskMouseClick.bind(dragEventThis);
                                 pageMouseEnterEvent = this._pageOnMouseEnter.bind(dragEventThis);
                                 pageMouseLeaveEvent = this._pageOnMouseLeave.bind(dragEventThis);
                                 this._pageEventList[pageIndex - 1] = {
@@ -119222,7 +119450,7 @@ var pdfParser = (function (documentReader) {
                                 options.mode = "default";
                             }
                             if (typeof options.allowManualPosition !== "boolean") {
-                                options.allowManualPosition = true;
+                                options.allowManualPosition = false;
                             }
                             if (typeof options.minPageNo !== "number") {
                                 options.minPageNo = 0;
