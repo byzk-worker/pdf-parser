@@ -100,7 +100,14 @@ interface SealResultThisInfo {
   _: SealComponent;
 }
 
-interface SealVerifyInfo {}
+interface SealVerifyInfo {
+  error: boolean;
+  msg?: string;
+  signatureName: string;
+  time?: string;
+  page: number;
+  userName?: string[];
+}
 
 interface SealVerifyPageMap {
   [pageNo: string]: SealVerifyInfo[];
@@ -1058,7 +1065,25 @@ export class SealComponent implements PageComponentAttachInterface {
 
   public async sealVerifyAll(fileId: string) {
     this._sealVerifyMap = {};
+    this._sealNavEle.innerHTML = "";
     const sealVerifyResult = await sealVerifyAll(fileId);
-    console.log(sealVerifyResult);
+    for (let i = 0; i < sealVerifyResult.length; i++) {
+      const verifyResult = sealVerifyResult[i];
+      const pageIndexStr = verifyResult.page + "";
+      let verifyMap = this._sealVerifyMap[pageIndexStr];
+      if (!verifyMap) {
+        verifyMap = [];
+        this._sealVerifyMap[pageIndexStr] = verifyMap;
+      }
+      verifyMap.push({
+        error: verifyResult.verifyResult,
+        msg: verifyResult.verifyMsg,
+        signatureName: verifyResult.signatureName,
+        time: verifyResult.time,
+        page: verifyResult.page,
+        userName: verifyResult.userName,
+      });
+      
+    }
   }
 }
