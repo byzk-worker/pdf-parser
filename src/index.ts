@@ -1,3 +1,4 @@
+import { SealInQFReq } from "./../hh/test/types/SealType.d";
 import {
   FileInfo,
   ReaderParserAbstract,
@@ -6,6 +7,7 @@ import {
   SealDragResult,
   SealPositionInfo,
   SealListResult,
+  SealQiFenInfo,
 } from "@byzk/document-reader";
 import {
   fileOpen,
@@ -15,6 +17,7 @@ import {
   SealInManyInfo,
   fileUrl,
   sealInKeyword,
+  sealInQF,
 } from "@byzk/pdf-locale-call";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry.js";
@@ -145,9 +148,7 @@ class Parser extends ReaderParserAbstract {
         debugger;
         this._fileUploadInfo.status = "ok";
         this._fileUploadInfo.id = id;
-        const result = await sealVerifyAll(id);
-        debugger;
-        console.log(result);
+        await this._sealComponent.sealVerifyAll(id);
       })
       .catch((err) => {
         debugger;
@@ -391,6 +392,49 @@ class Parser extends ReaderParserAbstract {
       keyword,
     });
 
+    const url = fileUrl(this._fileUploadInfo.id);
+    this._pdfDoc = await pdfjsLib.getDocument({
+      url: url,
+      cMapPacked,
+      cMapUrl,
+    }).promise;
+
+    this._pageComponent.reloadAllPage({
+      force: true,
+    });
+  }
+
+  public async signSealQiFen(
+    sealInfo: SealInfo,
+    pwd: string,
+    ...options: SealQiFenInfo[]
+  ): Promise<void> {
+    if (!pwd) {
+      throw new Error("密码不能为空");
+    }
+
+    if (this._fileUploadInfo.status !== "ok") {
+      throw new Error("文件未加载成功, 请售稍后重试!!!");
+    }
+
+    if (this._fileUploadInfo.error) {
+      throw new Error(this._fileUploadInfo.errMsg || "未知的文件获取异常");
+    }
+
+    if (!this._fileUploadInfo.id) {
+      throw new Error("获取文件ID失败");
+    }
+
+    const option = options[0];
+    await sealInQF({
+      sealId: sealInfo.id,
+      fileId: this._fileUploadInfo.id,
+      pwd,
+      positionX: option.x,
+      positionY: option.y,
+      size: option.splitSize,
+      page: option.pageNo,
+    });
     const url = fileUrl(this._fileUploadInfo.id);
     this._pdfDoc = await pdfjsLib.getDocument({
       url: url,

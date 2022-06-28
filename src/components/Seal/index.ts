@@ -100,6 +100,12 @@ interface SealResultThisInfo {
   _: SealComponent;
 }
 
+interface SealVerifyInfo {}
+
+interface SealVerifyPageMap {
+  [pageNo: string]: SealVerifyInfo[];
+}
+
 export class SealComponent implements PageComponentAttachInterface {
   private _multipageClickMenu = createMenu([]);
   private _dragSealClickMenu = createMenu([]);
@@ -122,6 +128,9 @@ export class SealComponent implements PageComponentAttachInterface {
 
   private _dragMaskEle: HTMLElement[] = [];
 
+  private _sealVerifyMap: SealVerifyPageMap;
+  private _sealNavEle = document.createElement("div");
+
   private _waitResult:
     | {
         resolve: (data: any) => void;
@@ -136,6 +145,7 @@ export class SealComponent implements PageComponentAttachInterface {
     private _scaleGet: () => number,
     private _appGet: () => AppInterface
   ) {
+    this._sealNavEle.className = styles.sealNav;
     this._menuOptionCancelClick = this._menuOptionCancelClick.bind(this);
     this._menuOptionContinueClick = this._menuOptionContinueClick.bind(this);
 
@@ -143,15 +153,16 @@ export class SealComponent implements PageComponentAttachInterface {
       title: "取消签章",
       click: (event) => {
         this._cancel = true;
+        this._drageStatus = "confirm";
         return this._menuOptionOkClick(event);
       },
     };
 
     this._qiFenSealClickMenu.appendMenuOption(realCancel);
-    this._qiFenSealClickMenu.appendMenuOption({
-      title: "调整签章",
-      click() {},
-    });
+    // this._qiFenSealClickMenu.appendMenuOption({
+    //   title: "调整签章",
+    //   click() {},
+    // });
     this._qiFenSealClickMenu.appendMenuOption({
       title: "确认签章",
       click: (event) => {
@@ -202,7 +213,12 @@ export class SealComponent implements PageComponentAttachInterface {
   }
 
   private _qiFenLoad() {
-    const { mode, qiFenConfig, pageNo } = this._dragSealInfo.options;
+    const {
+      mode,
+      qiFenConfig,
+      pageNo,
+      cernterPositionMode,
+    } = this._dragSealInfo.options;
     if (mode !== "qiFeng") {
       return;
     }
@@ -243,8 +259,12 @@ export class SealComponent implements PageComponentAttachInterface {
 
         const sealResult = cacheMap[cacheMapKeys[0]];
 
+        debugger;
         const currentBlock = num % splitPageNum;
-        sealResult.x = dragMaskEle.clientHeight / scale - splitWidth / 2;
+        sealResult.x = dragMaskEle.clientWidth / scale - splitWidth / 2;
+        if (cernterPositionMode === "center") {
+          sealResult.y = sealResult.y - sealInfo.height / 2;
+        }
         const { wrapperEle } = sealResult._;
         wrapperEle.style.transform = `scale(${scale})`;
 
@@ -1034,5 +1054,11 @@ export class SealComponent implements PageComponentAttachInterface {
     this._qiFenLoad();
     this._drageStatus = "drag";
     return await res;
+  }
+
+  public async sealVerifyAll(fileId: string) {
+    this._sealVerifyMap = {};
+    const sealVerifyResult = await sealVerifyAll(fileId);
+    console.log(sealVerifyResult);
   }
 }
