@@ -14,6 +14,7 @@ import {
   sealInMany,
   SealInManyInfo,
   fileUrl,
+  sealInKeyword,
 } from "@byzk/pdf-locale-call";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry.js";
@@ -30,9 +31,9 @@ import { AnnotationsComponent } from "./components/Annotations";
 import { SealComponent } from "./components/Seal";
 import { SealInfo, SealDragOption } from "@byzk/document-reader";
 import { showPinPopAndGetPassword } from "./views/PinPop";
-import {showSignSealTip} from "./views/SignSeal";
+import { showSignSealTip } from "./views/SignSeal";
 
-let signSealTime:any=[{},{},{},{},{}]
+let signSealTime: any = [{}, {}, {}, {}, {}];
 
 // showSignSealTip(document.body,signSealTime)
 
@@ -351,6 +352,9 @@ class Parser extends ReaderParserAbstract {
       cMapPacked,
       cMapUrl,
     }).promise;
+    // this._pageComponent.reloadAllPage({
+    //   force: true
+    // })
 
     reloadPageNo.forEach((pageNo) =>
       this._pageComponent.reloadPage(pageNo, {
@@ -358,6 +362,48 @@ class Parser extends ReaderParserAbstract {
       })
     );
   }
+
+  public async signSealKeyword(
+    sealInfo: SealInfo,
+    pwd: string,
+    keyword: string
+  ): Promise<void> {
+    if (!pwd) {
+      throw new Error("密码不能为空");
+    }
+
+    if (this._fileUploadInfo.status !== "ok") {
+      throw new Error("文件未加载成功, 请售稍后重试!!!");
+    }
+
+    if (this._fileUploadInfo.error) {
+      throw new Error(this._fileUploadInfo.errMsg || "未知的文件获取异常");
+    }
+
+    if (!this._fileUploadInfo.id) {
+      throw new Error("获取文件ID失败");
+    }
+
+    await sealInKeyword({
+      sealId: sealInfo.id,
+      fileId: this._fileUploadInfo.id,
+      pwd,
+      keyword,
+    });
+
+    const url = fileUrl(this._fileUploadInfo.id);
+    this._pdfDoc = await pdfjsLib.getDocument({
+      url: url,
+      cMapPacked,
+      cMapUrl,
+    }).promise;
+
+    this._pageComponent.reloadAllPage({
+      force: true,
+    });
+  }
+
+  // public async signseal
 
   // public async signSealPositionList(...signSeal: SealPositionInfo[]): Promise<void> {
   //   if (this._fileUploadInfo.status !== "ok") {
