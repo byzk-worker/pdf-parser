@@ -118802,6 +118802,7 @@ var pdfParser = (function (documentReader) {
     }
 
     var dragSealClickMenu = createMenu([]);
+    var dragSealContextmenu = createMenu([]);
     function sealInfoRender() {
         var scale = this.scaleGet();
         var x = this.rect[0] * scale;
@@ -118814,28 +118815,42 @@ var pdfParser = (function (documentReader) {
     }
     var SealComponent = /** @class */ (function () {
         function SealComponent(_pageComponent, _scaleGet, _appGet) {
+            var _this = this;
             this._pageComponent = _pageComponent;
             this._scaleGet = _scaleGet;
             this._appGet = _appGet;
+            this._cancel = false;
             this._pageEventList = [];
             this._pageSealInfoMap = {};
             this._dragMaskEle = [];
             this._waitResult = undefined;
             this._drageStatus = "no";
             this._menuOptionCancelClick = this._menuOptionCancelClick.bind(this);
+            this._menuOptionContinueClick = this._menuOptionContinueClick.bind(this);
             dragSealClickMenu.appendMenuOption({
                 title: "取消签章",
                 click: this._menuOptionCancelClick
             });
             dragSealClickMenu.appendMenuOption({
                 title: "继续签章",
-                click: this._menuOptionContinueClick.bind(this)
+                click: this._menuOptionContinueClick
             });
             dragSealClickMenu.appendMenuOption({
                 title: "确认签章",
-                click: this._menuOptionOkClick.bind(this)
+                click: function (event) {
+                    _this._cancel = false;
+                    return _this._menuOptionOkClick(event);
+                }
             });
             dragSealClickMenu.setDefaultClickEvent(this._menuOptionCancelClick);
+            dragSealContextmenu.appendMenuOption({
+                title: "取消签章",
+                click: function (event) {
+                    _this._cancel = true;
+                    return _this._menuOptionOkClick(event);
+                }
+            });
+            dragSealContextmenu.setDefaultClickEvent(this._menuOptionCancelClick);
         }
         /**
          * 缩放改变
@@ -118864,6 +118879,7 @@ var pdfParser = (function (documentReader) {
          */
         SealComponent.prototype._menuOptionCancelClick = function (event) {
             var _a;
+            debugger;
             var _b = this._dragSealInfo, _cacheId = _b._cacheId, _cachePageIndexStr = _b._cachePageIndexStr;
             var cacheMap = this._dragSealResultCacheMap[_cachePageIndexStr];
             if (cacheMap) {
@@ -118906,7 +118922,7 @@ var pdfParser = (function (documentReader) {
                 if (!this._waitResult) {
                     return;
                 }
-                var result = [];
+                var result = this._cancel ? undefined : [];
                 var pageSealResultCacheMap = this._dragSealResultCacheMap;
                 for (var pageIndexStr in pageSealResultCacheMap) {
                     var sealResultMap = pageSealResultCacheMap[pageIndexStr];
@@ -118914,7 +118930,9 @@ var pdfParser = (function (documentReader) {
                         var sealResult = sealResultMap[id];
                         sealResult._.wrapperEle.remove();
                         delete sealResult._;
-                        result.push(sealResult);
+                        if (!this._cancel) {
+                            result.push(sealResult);
+                        }
                     }
                 }
                 this._waitResult.resolve(result);
@@ -118981,6 +118999,7 @@ var pdfParser = (function (documentReader) {
             var scale = this._._scaleGet();
             var sealInfo = dragSealInfo.sealInfo, wrapperEle = dragSealInfo.wrapperEle;
             wrapperEle.onclick = this._._dragSealClick.bind(this);
+            wrapperEle.oncontextmenu = this._._dragSealClick.bind(Object.assign({}, this, { isRight: true }));
             var wrapperStyles = wrapperEle.style;
             wrapperStyles.display = "block";
             wrapperStyles.width = sealInfo.width + "px";
@@ -119051,7 +119070,6 @@ var pdfParser = (function (documentReader) {
             left += wrapperEle.clientWidth / 2;
             top /= scale;
             left /= scale;
-            console.log("left => ", left);
             var id = createId();
             var dragSealResult = {
                 _: {
@@ -119075,7 +119093,11 @@ var pdfParser = (function (documentReader) {
             dragSealInfo._cacheId = id;
             var rootEle = this._._appGet().getRootEle() || document.body;
             var _a = rootEle.getBoundingClientRect(), _top = _a.top, _left = _a.left;
-            dragSealClickMenu.show(event.x - _left, event.y - _top, rootEle);
+            var dragMenu = dragSealClickMenu;
+            if (this.isRight) {
+                dragMenu = dragSealContextmenu;
+            }
+            dragMenu.show(event.x - _left, event.y - _top, rootEle);
         };
         SealComponent.prototype._dragSealMouseEnter = function (event) {
             this._._dragSealInfo.wrapperEle.style.display = "none";
@@ -119087,7 +119109,11 @@ var pdfParser = (function (documentReader) {
             event.stopImmediatePropagation && event.stopImmediatePropagation();
             event.stopPropagation && event.stopPropagation();
         };
-        SealComponent.prototype._dragSealContextmenu = function (event) { };
+        SealComponent.prototype._dragSealContextmenu = function (event) {
+            var rootEle = this._._appGet().getRootEle() || document.body;
+            var _a = rootEle.getBoundingClientRect(), _top = _a.top, _left = _a.left;
+            dragSealContextmenu.show(event.x - _left, event.y - _top, rootEle);
+        };
         SealComponent.prototype.attachRunInit = function () {
             return false;
         };
@@ -119155,8 +119181,6 @@ var pdfParser = (function (documentReader) {
                                 var rect = annotation.rect;
                                 var width = rect[2] - rect[0];
                                 var height = rect[3] - rect[1];
-                                //   const x = rect[0];
-                                //   const y = pageWrapperEle.clientHeight - rect[3] * scale;
                                 var sealWrapperEle = document.createElement("div");
                                 pageWrapperEle.appendChild(sealWrapperEle);
                                 sealInfo = {
@@ -119171,11 +119195,6 @@ var pdfParser = (function (documentReader) {
                                 sealInfo.render = sealInfoRender.bind(sealInfo);
                                 sealInfoMap[fieldName] = sealInfo;
                                 sealInfo.render();
-                                //   sealWrapperEle.style.top = y + "px";
-                                //   sealWrapperEle.style.left = x + "px";
-                                //   sealWrapperEle.style.width = width + "px";
-                                //   sealWrapperEle.style.height = height + "px";
-                                //   sealWrapperEle.className = styles.sealWrapper;
                             });
                             for (i = 0; i < keys.length; i++) {
                                 key = keys[i];
@@ -119197,10 +119216,18 @@ var pdfParser = (function (documentReader) {
                         case 0:
                             options = options || {};
                             options.cernterPositionMode = options.cernterPositionMode || "center";
+                            if (options.mode != "default" &&
+                                options.mode !== "multipage" &&
+                                options.mode !== "qiFeng") {
+                                options.mode = "default";
+                            }
+                            if (typeof options.allowManualPosition !== "boolean") {
+                                options.allowManualPosition = true;
+                            }
                             if (typeof options.minPageNo !== "number") {
                                 options.minPageNo = 0;
                             }
-                            if (typeof options.maxPageNo === "number") {
+                            if (typeof options.maxPageNo !== "number") {
                                 options.maxPageNo = this._pageComponent.docNumPages();
                             }
                             if (options.maxPageNo < options.minPageNo) {
@@ -119547,8 +119574,12 @@ var pdfParser = (function (documentReader) {
                             if (res.cancel) {
                                 return [2 /*return*/, undefined];
                             }
-                            return [4 /*yield*/, sealQuery(res.password)];
+                            this.app.loading.show("正在获取印章列表...");
+                            _a.label = 2;
                         case 2:
+                            _a.trys.push([2, , 4, 5]);
+                            return [4 /*yield*/, sealQuery(res.password)];
+                        case 3:
                             sealList = _a.sent();
                             sealResult = [];
                             for (i = 0; i < sealList.total; i++) {
@@ -119563,7 +119594,14 @@ var pdfParser = (function (documentReader) {
                                     metadata: seal
                                 });
                             }
-                            return [2 /*return*/, sealResult];
+                            return [2 /*return*/, {
+                                    password: res.password,
+                                    sealList: sealResult
+                                }];
+                        case 4:
+                            this.app.loading.hide();
+                            return [7 /*endfinally*/];
+                        case 5: return [2 /*return*/];
                     }
                 });
             });
@@ -119593,10 +119631,10 @@ var pdfParser = (function (documentReader) {
         Parser.prototype.sealDrag = function (sealInfo, options) {
             return this._sealComponent.sealDrag(sealInfo, options);
         };
-        Parser.prototype.signSealPositionList = function (sealInfo) {
+        Parser.prototype.signSealPositionList = function (sealInfo, password) {
             var positionInfoList = [];
-            for (var _i = 1; _i < arguments.length; _i++) {
-                positionInfoList[_i - 1] = arguments[_i];
+            for (var _i = 2; _i < arguments.length; _i++) {
+                positionInfoList[_i - 2] = arguments[_i];
             }
             return __awaiter(this, void 0, void 0, function () {
                 var reloadPageNo, sealPosList, url, _a;
@@ -119604,6 +119642,9 @@ var pdfParser = (function (documentReader) {
                 return __generator(this, function (_b) {
                     switch (_b.label) {
                         case 0:
+                            if (!password) {
+                                throw new Error("密码不能为空");
+                            }
                             if (this._fileUploadInfo.status !== "ok") {
                                 throw new Error("文件未加载成功, 请售稍后重试!!!");
                             }
@@ -119631,7 +119672,7 @@ var pdfParser = (function (documentReader) {
                                     sealId: sealInfo.id,
                                     fileId: this._fileUploadInfo.id,
                                     pages: sealPosList,
-                                    pwd: "88888888"
+                                    pwd: password
                                 })];
                         case 1:
                             _b.sent();

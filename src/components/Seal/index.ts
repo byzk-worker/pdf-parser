@@ -6,7 +6,7 @@ import { sealVerifyAll } from "@byzk/pdf-locale-call";
 import {
   AppInterface,
   SealDragResult,
-  SealDrgaOption,
+  SealDragOption,
   SealInfo,
 } from "@byzk/document-reader";
 import { createSealSampleEle } from "./views/SealSample";
@@ -14,6 +14,7 @@ import { createMenu } from "../../views/Menu";
 import { createId } from "../../utils";
 
 const dragSealClickMenu = createMenu([]);
+const dragSealContextmenu = createMenu([]);
 
 interface PageSealInfo {
   rect: [number, number, number, number];
@@ -34,7 +35,7 @@ interface DragSealInfo {
   wrapperEle: HTMLElement;
   sealImgEle: HTMLImageElement;
   maskEle: HTMLElement;
-  options: SealDrgaOption;
+  options: SealDragOption;
   sealInfo: SealInfo;
   pageIndex?: number;
   _cacheResult?: SealDragResultCache;
@@ -81,6 +82,8 @@ interface SealResultThisInfo {
 }
 
 export class SealComponent implements PageComponentAttachInterface {
+  private _cancel: boolean = false;
+
   private _pageEventList: { onmouseenter: any; onmouseleave: any }[] = [];
 
   private _pageSealInfoMap: PageSealInfoMap = {};
@@ -106,19 +109,33 @@ export class SealComponent implements PageComponentAttachInterface {
     private _appGet: () => AppInterface
   ) {
     this._menuOptionCancelClick = this._menuOptionCancelClick.bind(this);
+    this._menuOptionContinueClick = this._menuOptionContinueClick.bind(this);
+
     dragSealClickMenu.appendMenuOption({
       title: "取消签章",
       click: this._menuOptionCancelClick,
     });
     dragSealClickMenu.appendMenuOption({
       title: "继续签章",
-      click: this._menuOptionContinueClick.bind(this),
+      click: this._menuOptionContinueClick,
     });
     dragSealClickMenu.appendMenuOption({
       title: "确认签章",
-      click: this._menuOptionOkClick.bind(this),
+      click: (event) => {
+        this._cancel = false;
+        return this._menuOptionOkClick(event);
+      },
     });
     dragSealClickMenu.setDefaultClickEvent(this._menuOptionCancelClick);
+
+    dragSealContextmenu.appendMenuOption({
+      title: "取消签章",
+      click: (event) => {
+        this._cancel = true;
+        return this._menuOptionOkClick(event);
+      },
+    });
+    dragSealContextmenu.setDefaultClickEvent(this._menuOptionCancelClick);
   }
 
   /**
@@ -147,7 +164,8 @@ export class SealComponent implements PageComponentAttachInterface {
    * 取消菜单点击
    * @param event 事件
    */
-  private _menuOptionCancelClick(event: MouseEvent) {
+  private _menuOptionCancelClick(this: SealComponent, event: MouseEvent) {
+    debugger;
     const { _cacheId, _cachePageIndexStr } = this._dragSealInfo;
     const cacheMap = this._dragSealResultCacheMap[_cachePageIndexStr];
     if (cacheMap) {
@@ -195,7 +213,7 @@ export class SealComponent implements PageComponentAttachInterface {
    * 确认签章单击事件
    * @param event 事件
    */
-  private _menuOptionOkClick(event: MouseEvent) {
+  private _menuOptionOkClick(this: SealComponent, event: MouseEvent) {
     if (this._drageStatus !== "confirm") {
       return;
     }
@@ -204,7 +222,7 @@ export class SealComponent implements PageComponentAttachInterface {
       if (!this._waitResult) {
         return;
       }
-      const result: SealDragResult[] = [];
+      const result: SealDragResult[] = this._cancel ? (undefined as any) : [];
       const pageSealResultCacheMap = this._dragSealResultCacheMap;
       for (let pageIndexStr in pageSealResultCacheMap) {
         const sealResultMap = pageSealResultCacheMap[pageIndexStr];
@@ -212,7 +230,9 @@ export class SealComponent implements PageComponentAttachInterface {
           const sealResult = sealResultMap[id];
           sealResult._.wrapperEle.remove();
           delete sealResult._;
-          result.push(sealResult);
+          if (!this._cancel) {
+            result.push(sealResult);
+          }
         }
       }
       this._waitResult.resolve(result);
@@ -289,6 +309,9 @@ export class SealComponent implements PageComponentAttachInterface {
     const { sealInfo, wrapperEle } = dragSealInfo;
 
     wrapperEle.onclick = this._._dragSealClick.bind(this);
+    wrapperEle.oncontextmenu = this._._dragSealClick.bind(
+      Object.assign({}, this, { isRight: true })
+    );
 
     const wrapperStyles = wrapperEle.style;
     wrapperStyles.display = "block";
@@ -343,7 +366,10 @@ export class SealComponent implements PageComponentAttachInterface {
    * @param this this指向
    * @param event 事件
    */
-  private _dragSealClick(this: SealDragThisInfo, event: MouseEvent) {
+  private _dragSealClick(
+    this: SealDragThisInfo & { isRight: boolean },
+    event: MouseEvent
+  ) {
     this._._drageStatus = "confirm";
 
     const dragSealInfo = this._._dragSealInfo;
@@ -392,8 +418,6 @@ export class SealComponent implements PageComponentAttachInterface {
     top /= scale;
     left /= scale;
 
-    console.log("left => ", left);
-
     const id = createId();
     const dragSealResult: SealDragResultCache = {
       _: {
@@ -419,7 +443,11 @@ export class SealComponent implements PageComponentAttachInterface {
 
     const rootEle = this._._appGet().getRootEle() || document.body;
     const { top: _top, left: _left } = rootEle.getBoundingClientRect();
-    dragSealClickMenu.show(event.x - _left, event.y - _top, rootEle);
+    let dragMenu = dragSealClickMenu;
+    if (this.isRight) {
+      dragMenu = dragSealContextmenu;
+    }
+    dragMenu.show(event.x - _left, event.y - _top, rootEle);
   }
 
   private _dragSealMouseEnter(this: SealResultThisInfo, event: MouseEvent) {
@@ -435,7 +463,11 @@ export class SealComponent implements PageComponentAttachInterface {
     event.stopPropagation && event.stopPropagation();
   }
 
-  private _dragSealContextmenu(this: SealDragThisInfo, event: MouseEvent) {}
+  private _dragSealContextmenu(this: SealDragThisInfo, event: MouseEvent) {
+    const rootEle = this._._appGet().getRootEle() || document.body;
+    const { top: _top, left: _left } = rootEle.getBoundingClientRect();
+    dragSealContextmenu.show(event.x - _left, event.y - _top, rootEle);
+  }
 
   attachRunInit(): boolean {
     return false;
@@ -516,8 +548,6 @@ export class SealComponent implements PageComponentAttachInterface {
       const rect = annotation.rect;
       const width = rect[2] - rect[0];
       const height = rect[3] - rect[1];
-      //   const x = rect[0];
-      //   const y = pageWrapperEle.clientHeight - rect[3] * scale;
       const sealWrapperEle = document.createElement("div");
       pageWrapperEle.appendChild(sealWrapperEle);
       sealInfo = {
@@ -532,11 +562,6 @@ export class SealComponent implements PageComponentAttachInterface {
       sealInfo.render = sealInfoRender.bind(sealInfo);
       sealInfoMap[fieldName] = sealInfo;
       sealInfo.render();
-      //   sealWrapperEle.style.top = y + "px";
-      //   sealWrapperEle.style.left = x + "px";
-      //   sealWrapperEle.style.width = width + "px";
-      //   sealWrapperEle.style.height = height + "px";
-      //   sealWrapperEle.className = styles.sealWrapper;
     });
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
@@ -548,15 +573,27 @@ export class SealComponent implements PageComponentAttachInterface {
 
   public async sealDrag(
     sealInfo: SealInfo,
-    options?: SealDrgaOption
+    options?: SealDragOption
   ): Promise<SealDragResult[]> {
     options = options || {};
     options.cernterPositionMode = options.cernterPositionMode || "center";
+    if (
+      options.mode != "default" &&
+      options.mode !== "multipage" &&
+      options.mode !== "qiFeng"
+    ) {
+      options.mode = "default";
+    }
+
+    if (typeof options.allowManualPosition !== "boolean") {
+      options.allowManualPosition = true;
+    }
+
     if (typeof options.minPageNo !== "number") {
       options.minPageNo = 0;
     }
 
-    if (typeof options.maxPageNo === "number") {
+    if (typeof options.maxPageNo !== "number") {
       options.maxPageNo = this._pageComponent.docNumPages();
     }
 

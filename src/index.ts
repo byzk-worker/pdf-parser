@@ -5,6 +5,7 @@ import {
   ieUtil,
   SealDragResult,
   SealPositionInfo,
+  SealListResult,
 } from "@byzk/document-reader";
 import {
   fileOpen,
@@ -27,7 +28,7 @@ import { OutlineComponent } from "./components/Outline";
 import { TextLayerComponent } from "./components/TextLayer";
 import { AnnotationsComponent } from "./components/Annotations";
 import { SealComponent } from "./components/Seal";
-import { SealInfo, SealDrgaOption } from "@byzk/document-reader";
+import { SealInfo, SealDragOption } from "@byzk/document-reader";
 import { showPinPopAndGetPassword } from "./views/PinPop";
 
 const lock = new AsyncLock();
@@ -238,29 +239,37 @@ class Parser extends ReaderParserAbstract {
     return this._nowPageNo;
   }
 
-  public async sealList(): Promise<SealInfo[]> {
+  public async sealList(): Promise<SealListResult> {
     const res = await showPinPopAndGetPassword(this.app.getRootEle());
     if (res.cancel) {
       return undefined;
     }
-    const sealList = await sealQuery(res.password);
-    const sealResult: SealInfo[] = [];
-    for (let i = 0; i < sealList.total; i++) {
-      const seal = sealList.sealInfoVo[i];
-      sealResult.push({
-        id: seal.id,
-        name: seal.sealMsg,
-        title: seal.sealMsg,
-        imgUrl: window.URL.createObjectURL(
-          base64ToBlob("data:image/png;base64," + seal.sealImg)
-        ),
-        width: mmConversionPx(parseInt(seal.width)),
-        height: mmConversionPx(parseInt(seal.height)),
-        metadata: seal,
-      } as SealInfo);
-    }
+    this.app.loading.show("正在获取印章列表...");
+    try {
+      const sealList = await sealQuery(res.password);
+      const sealResult: SealInfo[] = [];
+      for (let i = 0; i < sealList.total; i++) {
+        const seal = sealList.sealInfoVo[i];
+        sealResult.push({
+          id: seal.id,
+          name: seal.sealMsg,
+          title: seal.sealMsg,
+          imgUrl: window.URL.createObjectURL(
+            base64ToBlob("data:image/png;base64," + seal.sealImg)
+          ),
+          width: mmConversionPx(parseInt(seal.width)),
+          height: mmConversionPx(parseInt(seal.height)),
+          metadata: seal,
+        } as SealInfo);
+      }
 
-    return sealResult;
+      return {
+        password: res.password,
+        sealList: sealResult,
+      };
+    } finally {
+      this.app.loading.hide();
+    }
   }
 
   public getRotation(): number {
@@ -279,15 +288,20 @@ class Parser extends ReaderParserAbstract {
 
   public sealDrag(
     sealInfo: SealInfo,
-    options?: SealDrgaOption
+    options?: SealDragOption
   ): Promise<SealDragResult[]> {
     return this._sealComponent.sealDrag(sealInfo, options);
   }
 
   public async signSealPositionList(
     sealInfo: SealInfo,
+    password: string | undefined,
     ...positionInfoList: SealPositionInfo[]
   ): Promise<void> {
+    if (!password) {
+      throw new Error("密码不能为空");
+    }
+
     if (this._fileUploadInfo.status !== "ok") {
       throw new Error("文件未加载成功, 请售稍后重试!!!");
     }
@@ -323,7 +337,7 @@ class Parser extends ReaderParserAbstract {
       sealId: sealInfo.id,
       fileId: this._fileUploadInfo.id,
       pages: sealPosList,
-      pwd: "88888888",
+      pwd: password,
     });
 
     const url = fileUrl(this._fileUploadInfo.id);
