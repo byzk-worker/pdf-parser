@@ -12,6 +12,7 @@ import {
 import { createSealSampleEle, splitSealSampleEle } from "./views/SealSample";
 import { createMenu, MenuOption } from "../../views/Menu";
 import { createId } from "../../utils";
+import { showSignSealTip } from "../../views/SignSeal";
 
 // const dragSealClickMenu = createMenu([]);
 // const dragSealContextmenu = createMenu([]);
@@ -25,7 +26,8 @@ interface PageSealInfo {
   img: string;
   sealWrapperEle: HTMLDivElement;
   scaleGet(): number;
-  render();
+  render(): void;
+  pageIndex: number;
 }
 
 interface PageSealInfoMap {
@@ -75,6 +77,11 @@ interface ManualPositionInfo {
   globalOptions?: SealDragOption;
 }
 
+interface SealRectContextmenuThisInfo {
+  _: SealComponent;
+  pageSealInfo: PageSealInfo;
+}
+
 function sealInfoRender(this: PageSealInfo) {
   const scale = this.scaleGet();
   const x = this.rect[0] * scale;
@@ -110,7 +117,7 @@ interface SealVerifyInfo {
 }
 
 interface SealVerifyPageMap {
-  [pageNo: string]: SealVerifyInfo[];
+  [signatureName: string]: SealVerifyInfo;
 }
 
 export class SealComponent implements PageComponentAttachInterface {
@@ -826,6 +833,16 @@ export class SealComponent implements PageComponentAttachInterface {
     this._._qiFenSealClickMenu.show(event.x - left, event.y - top, rootEle);
   }
 
+  private _sealRectContextmenu(
+    this: SealRectContextmenuThisInfo,
+    event: MouseEvent
+  ) {
+    console.log("触发 => ", this);
+    const sealVerifyResult =  this._._sealVerifyMap[this.pageSealInfo.name+"_"+this.pageSealInfo.pageIndex]
+    console.log(sealVerifyResult);
+    showSignSealTip( this._._appGet().getRootEle() || document.body,sealVerifyResult)
+  }
+
   attachRunInit(): boolean {
     return false;
   }
@@ -921,7 +938,13 @@ export class SealComponent implements PageComponentAttachInterface {
         name: fieldName,
         img: "",
         sealWrapperEle,
+        pageIndex,
       } as any;
+      const thisInfo: SealRectContextmenuThisInfo = {
+        _: this,
+        pageSealInfo: sealInfo,
+      };
+      sealWrapperEle.oncontextmenu = this._sealRectContextmenu.bind(thisInfo);
       sealInfo.render = sealInfoRender.bind(sealInfo);
       sealInfoMap[fieldName] = sealInfo;
       sealInfo.render();
@@ -1067,23 +1090,22 @@ export class SealComponent implements PageComponentAttachInterface {
     this._sealVerifyMap = {};
     this._sealNavEle.innerHTML = "";
     const sealVerifyResult = await sealVerifyAll(fileId);
+    if (!sealVerifyResult) {
+      return;
+    }
+
     for (let i = 0; i < sealVerifyResult.length; i++) {
       const verifyResult = sealVerifyResult[i];
-      const pageIndexStr = verifyResult.page + "";
-      let verifyMap = this._sealVerifyMap[pageIndexStr];
-      if (!verifyMap) {
-        verifyMap = [];
-        this._sealVerifyMap[pageIndexStr] = verifyMap;
-      }
-      verifyMap.push({
-        error: verifyResult.verifyResult,
+      this._sealVerifyMap[
+        verifyResult.signatureName + "_" + verifyResult.page
+      ] = {
+        error: !verifyResult.verifyResult,
         msg: verifyResult.verifyMsg,
         signatureName: verifyResult.signatureName,
         time: verifyResult.time,
         page: verifyResult.page,
         userName: verifyResult.userName,
-      });
-      
+      };
     }
   }
 }

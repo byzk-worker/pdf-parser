@@ -34,15 +34,10 @@ import { AnnotationsComponent } from "./components/Annotations";
 import { SealComponent } from "./components/Seal";
 import { SealInfo, SealDragOption } from "@byzk/document-reader";
 import { showPinPopAndGetPassword } from "./views/PinPop";
-import { showSignSealTip } from "./views/SignSeal";
 
-
-// let signSealTime:any=[{},{},{},{},]
-
-// showSignSealTip(document.body,signSealTime)
 
 const lock = new AsyncLock();
-
+ 
 let cMapUrl: string | undefined = undefined;
 let cMapPacked: boolean | undefined = undefined;
 

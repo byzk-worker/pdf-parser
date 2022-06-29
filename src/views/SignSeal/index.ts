@@ -48,7 +48,9 @@ function createCertInfo(rootEle?: HTMLElement,cerInfo?:any) {
 }
 
 
-export function showSignSealTip(rootEle?: HTMLElement, signSealTime?: [],signSealInfo?:any) {
+export function showSignSealTip(rootEle?: HTMLElement, sealVerifyResult?:any,signSealInfo?:any) {
+  console.log(sealVerifyResult);
+  
   const elementGuid = newGuid();
   var signSealEle = `<div id="${elementGuid}" class='${styles.maskContainer}'>
     <div class='${styles.mask}'>
@@ -67,7 +69,7 @@ export function showSignSealTip(rootEle?: HTMLElement, signSealTime?: [],signSea
         <div>
           <div class='${styles.tip}'>签章信息</div>
           <div class='${styles.sealInfo}'>签章者：某某某信息技术有限公司</div>
-          ${signSealTime.map( () => `<div class='${styles.sealInfo}'>签章时间：2020年10月10日  09:28:25</div>` ) .join("\r\n")}
+          ${sealVerifyResult.map( () => `<div class='${styles.sealInfo}'>签章时间：2020年10月10日  09:28:25</div>` ) .join("\r\n")}
         </div>
         <hr/>
         <div>
