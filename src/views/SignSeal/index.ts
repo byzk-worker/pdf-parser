@@ -91,7 +91,7 @@ export function showSignSealTip(rootEle?: HTMLElement, signSealTime?: [],signSea
                 </div>
             </div>
         </div>
-        <div class='${styles.okBtn}'>确定</div>
+        <div class='${styles.okBtn}' onclick="document.getElementById('${elementGuid}').remove()">确定</div>
       </div>
     </div>
   </div>`;

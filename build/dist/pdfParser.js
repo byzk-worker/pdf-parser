@@ -118634,7 +118634,9 @@ var pdfParser = (function (documentReader) {
 
     var htmlParser = htmlTemplateParser$1(htmlStr$1);
     function createSealSampleEle(imgUrl) {
-        var sealSampleEle = htmlTemplateConvertEle(htmlParser({ styles: styles$3, imgUrl: imgUrl }));
+        return splitSealSampleEle(htmlTemplateConvertEle(htmlParser({ styles: styles$3, imgUrl: imgUrl })));
+    }
+    function splitSealSampleEle(sealSampleEle) {
         var sealImgEle = sealSampleEle.querySelector("img");
         var maskEle = sealSampleEle.querySelector("." + styles$3.maskBgc);
         return {
@@ -118648,7 +118650,6 @@ var pdfParser = (function (documentReader) {
     var styles$2 = {"menu":"index-module_menu__DvxPJ","option":"index-module_option__tcswj"};
     styleInject(css_248z$2);
 
-<<<<<<< HEAD
     var MenuOperationImpl = /** @class */ (function () {
         function MenuOperationImpl() {
             /**
@@ -118682,7 +118683,9 @@ var pdfParser = (function (documentReader) {
          * @returns 拼接完成的id
          */
         MenuOperationImpl.prototype._joinId = function (id) {
-            return this._menuId + "_" + id;
+            id = this._menuId + "_" + id;
+            id = id.replace(/\./gi, "");
+            return "_" + id;
         };
         MenuOperationImpl.prototype._documentClickHide = function (event) {
             document.removeEventListener("mousedown", this._documentClickHide);
@@ -118796,670 +118799,6 @@ var pdfParser = (function (documentReader) {
         MenuOperationImpl.prototype.setDefaultClickEvent = function (fn) {
             this._defaultClick = fn;
         };
-        return MenuOperationImpl;
-    }());
-    /**
-     * 创建菜单
-     * @param menuOptions 菜单选项
-     * @returns 菜单操作接口
-     */
-    function createMenu(menuOptions) {
-        var menuOperationImpl = new MenuOperationImpl();
-        menuOperationImpl.appendMenuOption.apply(menuOperationImpl, menuOptions);
-        return menuOperationImpl;
-=======
-    var htmlParser = htmlTemplateParser$1(htmlStr$1);
-    function createSealSampleEle(imgUrl) {
-        return splitSealSampleEle(htmlTemplateConvertEle(htmlParser({ styles: styles$2, imgUrl: imgUrl })));
-    }
-    function splitSealSampleEle(sealSampleEle) {
-        var sealImgEle = sealSampleEle.querySelector("img");
-        var maskEle = sealSampleEle.querySelector("." + styles$2.maskBgc);
-        return {
-            wrapperEle: sealSampleEle,
-            sealImgEle: sealImgEle,
-            maskEle: maskEle
-        };
->>>>>>> c1bd0c0d63adcf04972e6b238ca85d44b25a7435
-    }
-
-    var dragSealClickMenu = createMenu([]);
-    var dragSealContextmenu = createMenu([]);
-    function sealInfoRender() {
-        var scale = this.scaleGet();
-        var x = this.rect[0] * scale;
-        var y = this.sealWrapperEle.parentElement.clientHeight - this.rect[3] * scale;
-        this.sealWrapperEle.style.top = y + "px";
-        this.sealWrapperEle.style.left = x + "px";
-        this.sealWrapperEle.style.width = this.width * scale + "px";
-        this.sealWrapperEle.style.height = this.height * scale + "px";
-        this.sealWrapperEle.className = styles$4.sealWrapper;
-    }
-    var SealComponent = /** @class */ (function () {
-        function SealComponent(_pageComponent, _scaleGet, _appGet) {
-            var _this = this;
-            this._pageComponent = _pageComponent;
-            this._scaleGet = _scaleGet;
-            this._appGet = _appGet;
-            this._cancel = false;
-            this._pageEventList = [];
-            this._pageSealInfoMap = {};
-            this._dragMaskEle = [];
-            this._waitResult = undefined;
-            this._drageStatus = "no";
-            this._menuOptionCancelClick = this._menuOptionCancelClick.bind(this);
-            this._menuOptionContinueClick = this._menuOptionContinueClick.bind(this);
-            dragSealClickMenu.appendMenuOption({
-                title: "取消签章",
-                click: this._menuOptionCancelClick
-            });
-            dragSealClickMenu.appendMenuOption({
-                title: "继续签章",
-                click: this._menuOptionContinueClick
-            });
-            dragSealClickMenu.appendMenuOption({
-                title: "确认签章",
-                click: function (event) {
-                    _this._cancel = false;
-                    return _this._menuOptionOkClick(event);
-                }
-            });
-            dragSealClickMenu.setDefaultClickEvent(this._menuOptionCancelClick);
-            dragSealContextmenu.appendMenuOption({
-                title: "取消签章",
-                click: function (event) {
-                    _this._cancel = true;
-                    return _this._menuOptionOkClick(event);
-                }
-            });
-            dragSealContextmenu.setDefaultClickEvent(this._menuOptionCancelClick);
-        }
-        /**
-         * 缩放改变
-         * @param scale 缩放比率
-         */
-        SealComponent.prototype._reloadSealResultCache = function (scale, pageIndex) {
-            if (this._drageStatus === "no" || !this._dragSealResultCacheMapLen) {
-                return;
-            }
-            var pageIndexStr = pageIndex + "";
-            var sealResultCacheMap = this._dragSealResultCacheMap[pageIndexStr];
-            if (!sealResultCacheMap) {
-                return;
-            }
-            for (var id in sealResultCacheMap) {
-                var sealResultCache = sealResultCacheMap[id];
-                var _a = sealResultCache._, wrapperEle = _a.wrapperEle, top_1 = _a.top, left = _a.left;
-                wrapperEle.style.transform = "scale(".concat(scale, ")");
-                wrapperEle.style.top = top_1 * scale - wrapperEle.clientHeight / 2 + "px";
-                wrapperEle.style.left = left * scale - wrapperEle.clientWidth / 2 + "px";
-            }
-        };
-        /**
-         * 取消菜单点击
-         * @param event 事件
-         */
-        SealComponent.prototype._menuOptionCancelClick = function (event) {
-            var _a;
-            debugger;
-            var _b = this._dragSealInfo, _cacheId = _b._cacheId, _cachePageIndexStr = _b._cachePageIndexStr;
-            var cacheMap = this._dragSealResultCacheMap[_cachePageIndexStr];
-            if (cacheMap) {
-                delete cacheMap[_cacheId];
-            }
-            delete this._dragSealInfo._cacheId;
-            delete this._dragSealInfo._cachePageIndexStr;
-            delete this._dragSealInfo._cacheResult;
-            this._drageStatus = "drag";
-            (_a = this._dragSealInfo.wrapperEle.parentElement) === null || _a === void 0 ? void 0 : _a.dispatchEvent(new MouseEvent("mouseenter", event));
-        };
-        /**
-         * 继续菜单点击
-         * @param event 事件
-         */
-        SealComponent.prototype._menuOptionContinueClick = function (event) {
-            var _a = this._dragSealInfo, dragSealResult = _a._cacheResult, wrapperEle = _a.wrapperEle, sealInfo = _a.sealInfo, options = _a.options;
-            this._dragSealResultCacheMapLen += 1;
-            var thisInfo = {
-                sealResult: dragSealResult,
-                _: this
-            };
-            wrapperEle.style.zIndex = "999999";
-            wrapperEle.onmouseenter = this._dragSealMouseEnter.bind(thisInfo);
-            wrapperEle.onmouseleave = this._dragSealMouseLeave.bind(thisInfo);
-            wrapperEle.onclick = this._dragSealMouseClick.bind(thisInfo);
-            this._dragSealInfo = __assign(__assign({}, createSealSampleEle(sealInfo.imgUrl)), { options: options, sealInfo: sealInfo });
-            this._menuOptionCancelClick(event);
-        };
-        /**
-         * 确认签章单击事件
-         * @param event 事件
-         */
-        SealComponent.prototype._menuOptionOkClick = function (event) {
-            if (this._drageStatus !== "confirm") {
-                return;
-            }
-            this._drageStatus = "no";
-            try {
-                if (!this._waitResult) {
-                    return;
-                }
-                var result = this._cancel ? undefined : [];
-                var pageSealResultCacheMap = this._dragSealResultCacheMap;
-                for (var pageIndexStr in pageSealResultCacheMap) {
-                    var sealResultMap = pageSealResultCacheMap[pageIndexStr];
-                    for (var id in sealResultMap) {
-                        var sealResult = sealResultMap[id];
-                        sealResult._.wrapperEle.remove();
-                        delete sealResult._;
-                        if (!this._cancel) {
-                            result.push(sealResult);
-                        }
-                    }
-                }
-                this._waitResult.resolve(result);
-            }
-            finally {
-                this._waitResult = undefined;
-                this._dragSealInfo.wrapperEle.remove();
-                this._dragSealResultCacheMap = {};
-                this._dragSealResultCacheMapLen = 0;
-                this._dragSealInfo = undefined;
-            }
-        };
-        /**
-         * 页面鼠标进入事件
-         * @param this this指向
-         * @param event 事件
-         */
-        SealComponent.prototype._pageOnMouseEnter = function (event) {
-            if (this._._drageStatus === "no") {
-                this.sealDragMaskEle.style.zIndex = "0";
-            }
-            else {
-                this._._dragSealInfo.pageIndex = this.pageIndex;
-                this.sealDragMaskEle.style.zIndex = "999999";
-            }
-        };
-        /**
-         * 页面鼠标离开事件
-         * @param this this指向
-         * @param event 事件
-         */
-        SealComponent.prototype._pageOnMouseLeave = function (event) {
-            // if (this._._drageStatus !== "confirm" && this._._dragSealResultCacheMap) {
-            //   this.sealDragMaskEle.style.zIndex = "0";
-            // }
-        };
-        /**
-         * 可拖拽印章定位
-         * @param eventPosition 事件定位
-         * @param boundingRect 位置
-         * @param ele 元素
-         */
-        SealComponent.prototype._dragSealElePosition = function (eventPosition, boundingRect, ele) {
-            var height = ele.clientHeight;
-            var width = ele.clientWidth;
-            var targetX = eventPosition.x - boundingRect.left - width / 2;
-            var targetY = eventPosition.y - boundingRect.top - height / 2;
-            var styles = ele.style;
-            styles.top = targetY + "px";
-            styles.left = targetX + "px";
-        };
-        /**
-         * 鼠标进入遮罩
-         * @param this this指向
-         * @param event 事件
-         */
-        SealComponent.prototype._maskMouseEnter = function (event) {
-            var self = this._;
-            if (self._drageStatus !== "drag") {
-                return;
-            }
-            var dragSealInfo = self._dragSealInfo;
-            var targetEle = event.target;
-            var scale = this._._scaleGet();
-            var sealInfo = dragSealInfo.sealInfo, wrapperEle = dragSealInfo.wrapperEle;
-            wrapperEle.onclick = this._._dragSealClick.bind(this);
-            wrapperEle.oncontextmenu = this._._dragSealClick.bind(Object.assign({}, this, { isRight: true }));
-            var wrapperStyles = wrapperEle.style;
-            wrapperStyles.display = "block";
-            wrapperStyles.width = sealInfo.width + "px";
-            wrapperStyles.height = sealInfo.height + "px";
-            dragSealInfo.maskEle.style.lineHeight = sealInfo.height + "px";
-            wrapperStyles.transform = "scale(".concat(scale, ")");
-            if (wrapperEle.parentElement !== targetEle) {
-                targetEle.appendChild(wrapperEle);
-            }
-            self._dragSealElePosition(event, targetEle.getBoundingClientRect(), wrapperEle);
-        };
-        /**
-         * 鼠标在遮罩层移动
-         * @param this this指向
-         * @param event 事件
-         */
-        SealComponent.prototype._maskMouseMove = function (event) {
-            if (this._._drageStatus !== "drag") {
-                return;
-            }
-            this._._dragSealElePosition(event, this.sealDragMaskEle.getBoundingClientRect(), this._._dragSealInfo.wrapperEle);
-        };
-        /**
-         * 鼠标离开遮罩层
-         * @param this this指向
-         * @param event 事件
-         */
-        SealComponent.prototype._maskMouseLeave = function (event) {
-            if (this._._drageStatus !== "confirm" && this._._dragSealInfo) {
-                this._._dragSealInfo.wrapperEle.style.display = "none";
-            }
-        };
-        /**
-         * 拖拽印章鼠标单击事件
-         * @param this this指向
-         * @param event 事件
-         */
-        SealComponent.prototype._dragSealClick = function (event) {
-            this._._drageStatus = "confirm";
-            var dragSealInfo = this._._dragSealInfo;
-            var pageIndex = dragSealInfo.pageIndex, sealInfo = dragSealInfo.sealInfo, options = dragSealInfo.options, wrapperEle = dragSealInfo.wrapperEle, sealImgEle = dragSealInfo.sealImgEle, maskEle = dragSealInfo.maskEle;
-            var pageIndexStr = pageIndex + "";
-            var cacheMap = this._._dragSealResultCacheMap[pageIndexStr];
-            if (!cacheMap) {
-                cacheMap = {};
-                this._._dragSealResultCacheMap[pageIndexStr] = cacheMap;
-            }
-            var scale = this._._scaleGet();
-            var top = parseInt(wrapperEle.style.top || "0");
-            var left = parseInt(wrapperEle.style.left || "0");
-            var x = left;
-            var y = wrapperEle.parentElement.clientHeight - top;
-            if (options.cernterPositionMode === "center") {
-                x += sealImgEle.width / 2;
-                y -= sealImgEle.height / 2;
-            }
-            // if (options.cernterPositionMode === "center") {
-            //   x += sealImgEle.width / 2;
-            //   y -= sealImgEle.width / 2;
-            // }
-            // if (options.cernterPositionMode === "leftBottom") {
-            //   x -= wrapperEle.clientWidth / 2;
-            //   y -= wrapperEle.clientHeight / 2;
-            // }
-            x /= scale;
-            y /= scale;
-            top += wrapperEle.clientHeight / 2;
-            left += wrapperEle.clientWidth / 2;
-            top /= scale;
-            left /= scale;
-            var id = createId();
-            var dragSealResult = {
-                _: {
-                    id: id,
-                    top: top,
-                    left: left,
-                    wrapperEle: wrapperEle,
-                    sealImgEle: sealImgEle,
-                    maskEle: maskEle
-                },
-                pageNo: pageIndex || 1,
-                sealInfo: sealInfo,
-                x: x,
-                y: y,
-                cernterPositionMode: options.cernterPositionMode
-            };
-            cacheMap[id] = dragSealResult;
-            this._._dragSealResultCacheMapLen += 1;
-            dragSealInfo._cacheResult = dragSealResult;
-            dragSealInfo._cachePageIndexStr = pageIndexStr;
-            dragSealInfo._cacheId = id;
-            var rootEle = this._._appGet().getRootEle() || document.body;
-            var _a = rootEle.getBoundingClientRect(), _top = _a.top, _left = _a.left;
-            var dragMenu = dragSealClickMenu;
-            if (this.isRight) {
-                dragMenu = dragSealContextmenu;
-            }
-            dragMenu.show(event.x - _left, event.y - _top, rootEle);
-        };
-        SealComponent.prototype._dragSealMouseEnter = function (event) {
-            this._._dragSealInfo.wrapperEle.style.display = "none";
-        };
-        SealComponent.prototype._dragSealMouseLeave = function (event) {
-            this._._dragSealInfo.wrapperEle.style.display = "block";
-        };
-        SealComponent.prototype._dragSealMouseClick = function (event) {
-            event.stopImmediatePropagation && event.stopImmediatePropagation();
-            event.stopPropagation && event.stopPropagation();
-        };
-        SealComponent.prototype._dragSealContextmenu = function (event) {
-            var rootEle = this._._appGet().getRootEle() || document.body;
-            var _a = rootEle.getBoundingClientRect(), _top = _a.top, _left = _a.left;
-            dragSealContextmenu.show(event.x - _left, event.y - _top, rootEle);
-        };
-        SealComponent.prototype.attachRunInit = function () {
-            return false;
-        };
-        SealComponent.prototype.attach = function (doc, page, pageWrapperEle, pageCanvas, pageIndex) {
-            var _a;
-            return __awaiter(this, void 0, void 0, function () {
-                var srcPageEvent, maskWrapperEle, dragEventThis, pageMouseEnterEvent, pageMouseLeaveEvent, annotations, pageName, sealInfoMap, keys, i, key, sealInfo;
-                var _this = this;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0:
-                            this._reloadSealResultCache(this._scaleGet(), pageIndex);
-                            if (!pageWrapperEle.querySelector("." + styles$4.dragMask)) {
-                                srcPageEvent = this._pageEventList[pageIndex - 1];
-                                if (srcPageEvent) {
-                                    pageWrapperEle.removeEventListener("mouseenter", srcPageEvent.onmouseenter);
-                                    pageWrapperEle.removeEventListener("mouseleave", srcPageEvent.onmouseleave);
-                                }
-                                maskWrapperEle = document.createElement("div");
-                                dragEventThis = {
-                                    pageIndex: pageIndex,
-                                    sealDragMaskEle: maskWrapperEle,
-                                    _: this
-                                };
-                                maskWrapperEle.className = styles$4.dragMask;
-                                maskWrapperEle.style.zIndex = "0";
-                                this._dragMaskEle[pageIndex - 1] = maskWrapperEle;
-                                maskWrapperEle.onmouseenter = this._maskMouseEnter.bind(dragEventThis);
-                                maskWrapperEle.onmousemove = this._maskMouseMove.bind(dragEventThis);
-                                maskWrapperEle.onmouseleave = this._maskMouseLeave.bind(dragEventThis);
-                                pageMouseEnterEvent = this._pageOnMouseEnter.bind(dragEventThis);
-                                pageMouseLeaveEvent = this._pageOnMouseLeave.bind(dragEventThis);
-                                this._pageEventList[pageIndex - 1] = {
-                                    onmouseenter: pageMouseEnterEvent,
-                                    onmouseleave: pageMouseLeaveEvent
-                                };
-                                pageWrapperEle.addEventListener("mouseenter", pageMouseEnterEvent);
-                                pageWrapperEle.addEventListener("mouseleave", pageMouseLeaveEvent);
-                                pageWrapperEle.appendChild(maskWrapperEle);
-                            }
-                            return [4 /*yield*/, page.getAnnotations({ intent: "any" })];
-                        case 1:
-                            annotations = _b.sent();
-                            pageName = pageIndex + "";
-                            sealInfoMap = this._pageSealInfoMap[pageName];
-                            if (!sealInfoMap) {
-                                sealInfoMap = {};
-                                this._pageSealInfoMap[pageName] = sealInfoMap;
-                            }
-                            keys = Object.keys(sealInfoMap);
-                            annotations.forEach(function (annotation) {
-                                if (annotation.fieldType !== "Sig") {
-                                    return;
-                                }
-                                var fieldName = annotation.fieldName;
-                                var sealInfo = sealInfoMap[fieldName];
-                                var index = keys.indexOf(fieldName);
-                                if (index !== -1) {
-                                    keys.splice(index, 1);
-                                }
-                                if (sealInfo) {
-                                    sealInfo.render();
-                                    return;
-                                }
-                                var rect = annotation.rect;
-                                var width = rect[2] - rect[0];
-                                var height = rect[3] - rect[1];
-                                var sealWrapperEle = document.createElement("div");
-                                pageWrapperEle.appendChild(sealWrapperEle);
-                                sealInfo = {
-                                    rect: rect,
-                                    width: width,
-                                    height: height,
-                                    scaleGet: _this._scaleGet,
-                                    name: fieldName,
-                                    img: "",
-                                    sealWrapperEle: sealWrapperEle
-                                };
-                                sealInfo.render = sealInfoRender.bind(sealInfo);
-                                sealInfoMap[fieldName] = sealInfo;
-                                sealInfo.render();
-                            });
-                            for (i = 0; i < keys.length; i++) {
-                                key = keys[i];
-                                sealInfo = sealInfoMap[key];
-                                (_a = sealInfo === null || sealInfo === void 0 ? void 0 : sealInfo.sealWrapperEle) === null || _a === void 0 ? void 0 : _a.remove();
-                                delete sealInfoMap[key];
-                            }
-                            return [2 /*return*/];
-                    }
-                });
-            });
-        };
-        SealComponent.prototype.sealDrag = function (sealInfo, options) {
-            return __awaiter(this, void 0, void 0, function () {
-                var res, i, _a, wrapperEle, sealImgEle, maskEle;
-                var _this = this;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0:
-                            options = options || {};
-                            options.cernterPositionMode = options.cernterPositionMode || "center";
-                            if (options.mode != "default" &&
-                                options.mode !== "multipage" &&
-                                options.mode !== "qiFeng") {
-                                options.mode = "default";
-                            }
-                            if (typeof options.allowManualPosition !== "boolean") {
-                                options.allowManualPosition = true;
-                            }
-                            if (typeof options.minPageNo !== "number") {
-                                options.minPageNo = 0;
-                            }
-                            if (typeof options.maxPageNo !== "number") {
-                                options.maxPageNo = this._pageComponent.docNumPages();
-                            }
-                            if (options.maxPageNo < options.minPageNo) {
-                                throw new Error("参数无效");
-                            }
-                            if (this._waitResult) {
-                                throw new Error("拖拽进程被锁定");
-                            }
-                            res = new Promise(function (resolve, reject) {
-                                _this._waitResult = { resolve: resolve, reject: reject };
-                            });
-                            if (!(options.pageNo instanceof Array)) {
-                                options.pageNo = [];
-                                for (i = options.minPageNo; i <= options.maxPageNo; i++) {
-                                    options.pageNo.push(i);
-                                }
-                            }
-                            _a = createSealSampleEle(sealInfo.imgUrl), wrapperEle = _a.wrapperEle, sealImgEle = _a.sealImgEle, maskEle = _a.maskEle;
-                            wrapperEle.style.width = sealInfo.width + "px";
-                            wrapperEle.style.height = sealInfo.height + "px";
-                            this._dragSealInfo = {
-                                wrapperEle: wrapperEle,
-                                sealImgEle: sealImgEle,
-                                options: options,
-                                sealInfo: sealInfo,
-                                maskEle: maskEle
-                            };
-                            this._drageStatus = "drag";
-                            this._dragSealResultCacheMapLen = 0;
-                            this._dragSealResultCacheMap = {};
-                            return [4 /*yield*/, res];
-                        case 1: return [2 /*return*/, _b.sent()];
-                    }
-                });
-            });
-        };
-        return SealComponent;
-    }());
-
-    var css_248z$1 = ".index-module_mask__2LzJT {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  background-color: rgba(0, 0, 0, 0.2);\n  z-index: 999;\n  overflow: hidden;\n}\n.index-module_mask__2LzJT.index-module_hide__JkSrz {\n  display: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt {\n  width: 405px;\n  height: 199px;\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  margin-top: calc(-199px / 2);\n  margin-left: calc(-405px / 2);\n  background: #fff;\n  box-shadow: 3px 2px 10px 2px rgba(0, 0, 0, 0.16);\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM {\n  width: 100%;\n  height: 40px;\n  background: #2752e7;\n  line-height: 40px;\n  color: #fff;\n  position: relative;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM > .index-module_text__Ymqsz {\n  display: block;\n  padding-left: 16px;\n  font-size: 14px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  cursor: default;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM > #index-module_close__Wl40S {\n  display: block;\n  width: 18px;\n  height: 18px;\n  position: absolute;\n  right: 26px;\n  top: 50%;\n  margin-top: calc(-18px / 2);\n  cursor: pointer;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn {\n  width: 100%;\n  height: calc(100%-40px);\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 {\n  width: 100%;\n  padding: 23px 0 44px 0;\n  font-size: 0;\n  height: 30px;\n  line-height: 30px;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > label {\n  display: inline-block;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  margin-left: 31px;\n  margin-right: 6px;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > #index-module_password__Mwfes {\n  display: inline-block;\n  width: 252px;\n  height: 28px;\n  line-height: 28px;\n  font-size: 12px;\n  border-radius: 4px 4px 4px 4px;\n  outline: none;\n  border: 1px solid #e6e6e6;\n  padding-left: 6px;\n  color: #2752e7;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > #index-module_password__Mwfes:focus {\n  border: 1px solid #2752e7;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE {\n  width: 100%;\n  position: relative;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE > #index-module_okBtn__Oixoi {\n  width: 99px;\n  height: 34px;\n  text-align: center;\n  background: #2752e7;\n  border-radius: 4px 4px 4px 4px;\n  line-height: 34px;\n  font-size: 14px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #ffffff;\n  float: right;\n  margin-right: 39px;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE > #index-module_okBtn__Oixoi.index-module_disabled__TZOXS {\n  background-color: #444c5e;\n  cursor: not-allowed;\n}\n";
-    var styles$1 = {"mask":"index-module_mask__2LzJT","hide":"index-module_hide__JkSrz","pinPop":"index-module_pinPop__ZgcFt","title":"index-module_title__339EM","text":"index-module_text__Ymqsz","close":"index-module_close__Wl40S","content":"index-module_content__F4Snn","form":"index-module_form__2Plm2","password":"index-module_password__Mwfes","btnGroup":"index-module_btnGroup__JbjYE","okBtn":"index-module_okBtn__Oixoi","disabled":"index-module_disabled__TZOXS"};
-    styleInject(css_248z$1);
-
-<<<<<<< HEAD
-    var htmlStr = (_) => `<div class="<%= styles.mask %> <%= styles.hide %>">
-    <div class="<%= styles.pinPop %>">
-        <div class="<%= styles.title %>">
-            <span class="<%= styles.text %>">PIN码</span>
-            <img id="<%= styles.close %>" title="关闭" src="data:image/png;base64,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">
-        </div>
-        <div class="<%= styles.content %>">
-            <div class="<%= styles.form %>">
-                <label for="<%= styles.password %>">请输入PIN码:</label>
-                <input id="<%= styles.password %>" type="password">
-            </div>
-            <div class="<%= styles.btnGroup %>">
-                <div id="<%= styles.okBtn %>" class="<%= styles.disabled %>">确定</div>
-            </div>
-        </div>
-    </div>
-=======
-    var MenuOperationImpl = /** @class */ (function () {
-        function MenuOperationImpl() {
-            /**
-             * 是否已被销毁
-             */
-            this._destory = false;
-            /**
-             * 菜单ID
-             */
-            this._menuId = createId();
-            /**
-             * 菜单元素
-             */
-            this._menuEle = document.createElement("div");
-            this._menuEle.className = styles$1.menu;
-            this._menuEle.style.display = "none";
-            this.hide = this.hide.bind(this);
-            this._documentClickHide = this._documentClickHide.bind(this);
-        }
-        /**
-         * 销毁监测
-         */
-        MenuOperationImpl.prototype._destoryCheck = function () {
-            if (this._destory) {
-                throw new Error("菜单已被销毁, 无法使用");
-            }
-        };
-        /**
-         * 拼接id
-         * @param id id
-         * @returns 拼接完成的id
-         */
-        MenuOperationImpl.prototype._joinId = function (id) {
-            id = this._menuId + "_" + id;
-            id = id.replace(/\./gi, "");
-            return "_" + id;
-        };
-        MenuOperationImpl.prototype._documentClickHide = function (event) {
-            document.removeEventListener("mousedown", this._documentClickHide);
-            var ele = event.target;
-            if (ele.className.includes(styles$1.option)) {
-                ele._onclick(event);
-                return;
-            }
-            this.hide();
-            if (this._defaultClick) {
-                this._defaultClick(event);
-            }
-        };
-        /**
-         * 显示菜单
-         * @param x x坐标
-         * @param y y坐标
-         * @param ele 要显示道德元素
-         */
-        MenuOperationImpl.prototype.show = function (x, y, ele) {
-            this._destoryCheck();
-            ele = ele || document.body;
-            if (this._menuEle.parentElement !== ele) {
-                ele.appendChild(this._menuEle);
-            }
-            this._menuEle.style.top = y + "px";
-            this._menuEle.style.left = x + "px";
-            this._menuEle.style.display = "block";
-            document.addEventListener("mousedown", this._documentClickHide);
-        };
-        /**
-         * 隐藏菜单
-         */
-        MenuOperationImpl.prototype.hide = function () {
-            this._destoryCheck();
-            this._menuEle.style.display = "none";
-        };
-        /**
-         * 销毁菜单
-         */
-        MenuOperationImpl.prototype.destory = function () {
-            if (this._destory) {
-                return;
-            }
-            this.hide();
-            this._menuEle.remove();
-            delete this._menuEle;
-        };
-        /**
-         * 添加菜单选项
-         * @param menuOption 菜单元素
-         */
-        MenuOperationImpl.prototype.appendMenuOption = function () {
-            var _this = this;
-            var menuOption = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                menuOption[_i] = arguments[_i];
-            }
-            if (menuOption.length === 0) {
-                return;
-            }
-            this._destoryCheck();
-            var _loop_1 = function (i) {
-                var option = menuOption[i];
-                var optionEle = document.createElement("div");
-                optionEle.className = styles$1.option;
-                optionEle.innerText = option.title;
-                if (option.id) {
-                    optionEle.id = this_1._joinId(option.id);
-                }
-                optionEle._onclick = function (event) {
-                    event.stopImmediatePropagation && event.stopImmediatePropagation();
-                    event.stopPropagation && event.stopPropagation();
-                    _this.hide();
-                    if (option.click) {
-                        option.click(event);
-                    }
-                };
-                this_1._menuEle.appendChild(optionEle);
-            };
-            var this_1 = this;
-            for (var i = 0; i < menuOption.length; i++) {
-                _loop_1(i);
-            }
-        };
-        /**
-         * 根据id移除菜单选项
-         * @param ids 要移除的id
-         */
-        MenuOperationImpl.prototype.removeMenuOption = function () {
-            var ids = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                ids[_i] = arguments[_i];
-            }
-            if (ids.length === 0) {
-                return;
-            }
-            this._destoryCheck();
-            for (var i = 0; i < ids.length; i++) {
-                var id = ids[i];
-                var targetEle = this._menuEle.querySelector("#" + this._joinId(id));
-                if (targetEle) {
-                    targetEle.remove();
-                }
-            }
-        };
-        /**
-         * 设置默认单击事件
-         * @param fn 单击方法
-         */
-        MenuOperationImpl.prototype.setDefaultClickEvent = function (fn) {
-            this._defaultClick = fn;
-        };
         /**
          * 是否已经显示
          * @returns 是/否
@@ -119514,7 +118853,7 @@ var pdfParser = (function (documentReader) {
         this.sealWrapperEle.style.left = x + "px";
         this.sealWrapperEle.style.width = this.width * scale + "px";
         this.sealWrapperEle.style.height = this.height * scale + "px";
-        this.sealWrapperEle.className = styles$3.sealWrapper;
+        this.sealWrapperEle.className = styles$4.sealWrapper;
     }
     var SealComponent = /** @class */ (function () {
         function SealComponent(_pageComponent, _scaleGet, _appGet) {
@@ -120021,7 +119360,7 @@ var pdfParser = (function (documentReader) {
                     switch (_b.label) {
                         case 0:
                             this._reloadSealResultCache(this._scaleGet(), pageIndex);
-                            if (!pageWrapperEle.querySelector("." + styles$3.dragMask)) {
+                            if (!pageWrapperEle.querySelector("." + styles$4.dragMask)) {
                                 srcPageEvent = this._pageEventList[pageIndex - 1];
                                 if (srcPageEvent) {
                                     pageWrapperEle.removeEventListener("mouseenter", srcPageEvent.onmouseenter);
@@ -120033,7 +119372,7 @@ var pdfParser = (function (documentReader) {
                                     sealDragMaskEle: maskWrapperEle,
                                     _: this
                                 };
-                                maskWrapperEle.className = styles$3.dragMask;
+                                maskWrapperEle.className = styles$4.dragMask;
                                 maskWrapperEle.style.zIndex = "0";
                                 this._dragMaskEle[pageIndex - 1] = maskWrapperEle;
                                 maskWrapperEle.onmouseenter = this._maskMouseEnter.bind(dragEventThis);
@@ -120163,9 +119502,9 @@ var pdfParser = (function (documentReader) {
         return SealComponent;
     }());
 
-    var css_248z = ".index-module_mask__2LzJT {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  background-color: rgba(0, 0, 0, 0.2);\n  z-index: 999;\n  overflow: hidden;\n}\n.index-module_mask__2LzJT.index-module_hide__JkSrz {\n  display: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt {\n  width: 405px;\n  height: 199px;\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  margin-top: calc(-199px / 2);\n  margin-left: calc(-405px / 2);\n  background: #fff;\n  box-shadow: 3px 2px 10px 2px rgba(0, 0, 0, 0.16);\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM {\n  width: 100%;\n  height: 40px;\n  background: #2752e7;\n  line-height: 40px;\n  color: #fff;\n  position: relative;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM > .index-module_text__Ymqsz {\n  display: block;\n  padding-left: 16px;\n  font-size: 14px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  cursor: default;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM > #index-module_close__Wl40S {\n  display: block;\n  width: 18px;\n  height: 18px;\n  position: absolute;\n  right: 26px;\n  top: 50%;\n  margin-top: calc(-18px / 2);\n  cursor: pointer;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn {\n  width: 100%;\n  height: calc(100%-40px);\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 {\n  width: 100%;\n  padding: 23px 0 44px 0;\n  font-size: 0;\n  height: 30px;\n  line-height: 30px;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > label {\n  display: inline-block;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  margin-left: 31px;\n  margin-right: 6px;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > #index-module_password__Mwfes {\n  display: inline-block;\n  width: 252px;\n  height: 28px;\n  line-height: 28px;\n  font-size: 12px;\n  border-radius: 4px 4px 4px 4px;\n  outline: none;\n  border: 1px solid #e6e6e6;\n  padding-left: 6px;\n  color: #2752e7;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > #index-module_password__Mwfes:focus {\n  border: 1px solid #2752e7;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE {\n  width: 100%;\n  position: relative;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE > #index-module_okBtn__Oixoi {\n  width: 99px;\n  height: 34px;\n  text-align: center;\n  background: #2752e7;\n  border-radius: 4px 4px 4px 4px;\n  line-height: 34px;\n  font-size: 14px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #ffffff;\n  float: right;\n  margin-right: 39px;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE > #index-module_okBtn__Oixoi.index-module_disabled__TZOXS {\n  background-color: #444c5e;\n  cursor: not-allowed;\n}\n";
-    var styles = {"mask":"index-module_mask__2LzJT","hide":"index-module_hide__JkSrz","pinPop":"index-module_pinPop__ZgcFt","title":"index-module_title__339EM","text":"index-module_text__Ymqsz","close":"index-module_close__Wl40S","content":"index-module_content__F4Snn","form":"index-module_form__2Plm2","password":"index-module_password__Mwfes","btnGroup":"index-module_btnGroup__JbjYE","okBtn":"index-module_okBtn__Oixoi","disabled":"index-module_disabled__TZOXS"};
-    styleInject(css_248z);
+    var css_248z$1 = ".index-module_mask__2LzJT {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  background-color: rgba(0, 0, 0, 0.2);\n  z-index: 999;\n  overflow: hidden;\n}\n.index-module_mask__2LzJT.index-module_hide__JkSrz {\n  display: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt {\n  width: 405px;\n  height: 199px;\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  margin-top: calc(-199px / 2);\n  margin-left: calc(-405px / 2);\n  background: #fff;\n  box-shadow: 3px 2px 10px 2px rgba(0, 0, 0, 0.16);\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM {\n  width: 100%;\n  height: 40px;\n  background: #2752e7;\n  line-height: 40px;\n  color: #fff;\n  position: relative;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM > .index-module_text__Ymqsz {\n  display: block;\n  padding-left: 16px;\n  font-size: 14px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  cursor: default;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM > #index-module_close__Wl40S {\n  display: block;\n  width: 18px;\n  height: 18px;\n  position: absolute;\n  right: 26px;\n  top: 50%;\n  margin-top: calc(-18px / 2);\n  cursor: pointer;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn {\n  width: 100%;\n  height: calc(100%-40px);\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 {\n  width: 100%;\n  padding: 23px 0 44px 0;\n  font-size: 0;\n  height: 30px;\n  line-height: 30px;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > label {\n  display: inline-block;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  margin-left: 31px;\n  margin-right: 6px;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > #index-module_password__Mwfes {\n  display: inline-block;\n  width: 252px;\n  height: 28px;\n  line-height: 28px;\n  font-size: 12px;\n  border-radius: 4px 4px 4px 4px;\n  outline: none;\n  border: 1px solid #e6e6e6;\n  padding-left: 6px;\n  color: #2752e7;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > #index-module_password__Mwfes:focus {\n  border: 1px solid #2752e7;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE {\n  width: 100%;\n  position: relative;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE > #index-module_okBtn__Oixoi {\n  width: 99px;\n  height: 34px;\n  text-align: center;\n  background: #2752e7;\n  border-radius: 4px 4px 4px 4px;\n  line-height: 34px;\n  font-size: 14px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #ffffff;\n  float: right;\n  margin-right: 39px;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE > #index-module_okBtn__Oixoi.index-module_disabled__TZOXS {\n  background-color: #444c5e;\n  cursor: not-allowed;\n}\n";
+    var styles$1 = {"mask":"index-module_mask__2LzJT","hide":"index-module_hide__JkSrz","pinPop":"index-module_pinPop__ZgcFt","title":"index-module_title__339EM","text":"index-module_text__Ymqsz","close":"index-module_close__Wl40S","content":"index-module_content__F4Snn","form":"index-module_form__2Plm2","password":"index-module_password__Mwfes","btnGroup":"index-module_btnGroup__JbjYE","okBtn":"index-module_okBtn__Oixoi","disabled":"index-module_disabled__TZOXS"};
+    styleInject(css_248z$1);
 
     var htmlStr = (_) => `<div class="<%= styles.mask %> <%= styles.hide %>">
     <div class="<%= styles.pinPop %>">
@@ -120183,7 +119522,6 @@ var pdfParser = (function (documentReader) {
             </div>
         </div>
     </div>
->>>>>>> c1bd0c0d63adcf04972e6b238ca85d44b25a7435
 </div>`;
 
     var waitResult;
@@ -120263,7 +119601,7 @@ var pdfParser = (function (documentReader) {
         });
     }
 
-    var css_248z = ".index-module_certInfo__Ifnhj {\n  position: fixed;\n  top: 240px;\n  bottom: 0;\n  left: 40%;\n  right: 0;\n  z-index: 99999999;\n  height: 328px;\n  width: 359px;\n  background-color: #fff;\n  box-shadow: 3px 2px 10px 1px rgba(0, 0, 0, 0.16);\n}\n.index-module_certInfo__Ifnhj .index-module_title__iwY6- {\n  height: 40px;\n  background: #2752e7;\n  color: #fff;\n  font-size: 14px;\n  display: flex;\n  align-items: center;\n  padding-left: 16px;\n}\n.index-module_certInfo__Ifnhj .index-module_close__4JCKl {\n  position: absolute;\n  display: block;\n  right: 26px;\n  width: 18px;\n  height: 18px;\n}\n.index-module_certInfo__Ifnhj .index-module_close__4JCKl:hover {\n  cursor: pointer;\n}\n.index-module_certInfo__Ifnhj .index-module_div__S2OY7 {\n  display: flex;\n  flex-direction: row;\n  margin-top: 12px;\n}\n.index-module_certInfo__Ifnhj .index-module_div__S2OY7 .index-module_left__ib4hl {\n  width: 130px;\n  text-align: right;\n  font-size: 14px;\n  margin-left: 30px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #333333;\n}\n.index-module_certInfo__Ifnhj .index-module_div__S2OY7 .index-module_right__9f6fi {\n  text-align: left;\n  font-size: 14px;\n  margin-left: 2px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #333333;\n}\n.index-module_certInfo__Ifnhj .index-module_okBtn__Syx-f {\n  width: 99px;\n  height: 34px;\n  color: #fff;\n  display: flex;\n  position: absolute;\n  bottom: 30px;\n  right: 20px;\n  justify-content: center;\n  align-items: center;\n  background: #2752e7;\n  border-radius: 4px 4px 4px 4px;\n  opacity: 1;\n}\n.index-module_certInfo__Ifnhj .index-module_okBtn__Syx-f:hover {\n  cursor: pointer;\n}\n.index-module_maskContainer__Wdkgl {\n  position: fixed;\n  top: 0px;\n  left: 0px;\n  width: 100vw;\n  height: 100vh;\n  z-index: 1000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.index-module_mask__OibLq {\n  position: fixed;\n  top: 160px;\n  bottom: 0;\n  left: 37%;\n  right: 0;\n  z-index: 999;\n  height: 557px;\n  width: 460px;\n  background-color: #fff;\n  box-shadow: 3px 2px 10px 2px rgba(0, 0, 0, 0.16);\n  border-radius: 0px 0px 0px 0px;\n}\n.index-module_mask__OibLq.index-module_hide__ZVUcR {\n  display: none;\n}\n.index-module_mask__OibLq .index-module_title__iwY6- {\n  height: 40px;\n  background: #2752e7;\n  color: #fff;\n  font-size: 14px;\n  display: flex;\n  align-items: center;\n  padding-left: 16px;\n}\n.index-module_mask__OibLq .index-module_close__4JCKl {\n  position: absolute;\n  display: block;\n  right: 26px;\n  width: 18px;\n  height: 18px;\n}\n.index-module_mask__OibLq .index-module_close__4JCKl:hover {\n  cursor: pointer;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p {\n  padding: 20px 20px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu {\n  display: flex;\n  flex-direction: row;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipLeft__2env0 {\n  height: 40px;\n  width: 40px;\n  background-image: url(\"../../../hh/error.png\");\n  background-size: 100% 100%;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipRight__wgmYo {\n  display: flex;\n  flex-direction: column;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipRight__wgmYo .index-module_top__-S1lN {\n  width: 197px;\n  height: 20px;\n  font-size: 16px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: bold;\n  color: #333333;\n  line-height: 19px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipRight__wgmYo .index-module_bottom__9CkYB {\n  width: 379px;\n  height: 14px;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #999999;\n  line-height: 14px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_tip__irD9k {\n  height: 14px;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: bold;\n  color: #2752e7;\n  line-height: 14px;\n  margin-top: 8px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_sealInfo__1-N-D {\n  margin-top: 8px;\n  height: 14px;\n  margin-left: 42px;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #666666;\n  line-height: 14px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_timeInfoLeft__qkGHi {\n  display: flex;\n  flex-direction: column;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_timeInfoLeft__qkGHi .index-module_leftInfo__ZcicF {\n  height: 14px;\n  font-size: 12px;\n  margin-left: 40px;\n  margin-top: 8px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #666666;\n  line-height: 14px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_btns__r1wG- {\n  padding: 12px 48px 10px 48px;\n  display: flex;\n  justify-content: space-between;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_btn__bF-4C {\n  height: 27px;\n  background-color: #fff;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: bold;\n  color: #2752e7;\n  border: 1px solid #2752e7;\n  border-radius: 6px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_btn__bF-4C:hover {\n  cursor: pointer;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_okBtn__Syx-f {\n  width: 99px;\n  height: 34px;\n  color: #fff;\n  display: flex;\n  position: absolute;\n  bottom: 30px;\n  right: 20px;\n  justify-content: center;\n  align-items: center;\n  background: #2752e7;\n  border-radius: 4px 4px 4px 4px;\n  opacity: 1;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_okBtn__Syx-f:hover {\n  cursor: pointer;\n}\n";
+    var css_248z = ".index-module_certInfo__Ifnhj {\n  position: fixed;\n  top: 240px;\n  bottom: 0;\n  left: 40%;\n  right: 0;\n  z-index: 99999999;\n  height: 328px;\n  width: 359px;\n  background-color: #fff;\n  box-shadow: 3px 2px 10px 1px rgba(0, 0, 0, 0.16);\n}\n.index-module_certInfo__Ifnhj .index-module_title__iwY6- {\n  height: 40px;\n  background: #2752e7;\n  color: #fff;\n  font-size: 14px;\n  display: flex;\n  align-items: center;\n  padding-left: 16px;\n}\n.index-module_certInfo__Ifnhj .index-module_close__4JCKl {\n  position: absolute;\n  display: block;\n  right: 26px;\n  width: 18px;\n  height: 18px;\n}\n.index-module_certInfo__Ifnhj .index-module_close__4JCKl:hover {\n  cursor: pointer;\n}\n.index-module_certInfo__Ifnhj .index-module_div__S2OY7 {\n  display: flex;\n  flex-direction: row;\n  margin-top: 12px;\n}\n.index-module_certInfo__Ifnhj .index-module_div__S2OY7 .index-module_left__ib4hl {\n  width: 130px;\n  text-align: right;\n  font-size: 14px;\n  margin-left: 30px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #333333;\n}\n.index-module_certInfo__Ifnhj .index-module_div__S2OY7 .index-module_right__9f6fi {\n  text-align: left;\n  font-size: 14px;\n  margin-left: 2px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #333333;\n}\n.index-module_certInfo__Ifnhj .index-module_okBtn__Syx-f {\n  width: 99px;\n  height: 34px;\n  color: #fff;\n  display: flex;\n  position: absolute;\n  bottom: 30px;\n  right: 20px;\n  justify-content: center;\n  align-items: center;\n  background: #2752e7;\n  border-radius: 4px 4px 4px 4px;\n  opacity: 1;\n}\n.index-module_certInfo__Ifnhj .index-module_okBtn__Syx-f:hover {\n  cursor: pointer;\n}\n.index-module_maskContainer__Wdkgl {\n  position: fixed;\n  top: 0px;\n  left: 0px;\n  width: 100vw;\n  height: 100vh;\n  z-index: 1000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background-color: rgba(0, 0, 0, 0.2);\n}\n.index-module_mask__OibLq {\n  position: fixed;\n  top: 160px;\n  bottom: 0;\n  left: 37%;\n  right: 0;\n  z-index: 999;\n  height: 557px;\n  width: 460px;\n  background-color: #fff;\n  box-shadow: 3px 2px 10px 2px rgba(0, 0, 0, 0.16);\n  border-radius: 0px 0px 0px 0px;\n}\n.index-module_mask__OibLq.index-module_hide__ZVUcR {\n  display: none;\n}\n.index-module_mask__OibLq .index-module_title__iwY6- {\n  height: 40px;\n  background: #2752e7;\n  color: #fff;\n  font-size: 14px;\n  display: flex;\n  align-items: center;\n  padding-left: 16px;\n}\n.index-module_mask__OibLq .index-module_close__4JCKl {\n  position: absolute;\n  display: block;\n  right: 26px;\n  width: 18px;\n  height: 18px;\n}\n.index-module_mask__OibLq .index-module_close__4JCKl:hover {\n  cursor: pointer;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p {\n  padding: 20px 20px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu {\n  display: flex;\n  flex-direction: row;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipLeft__2env0 {\n  height: 40px;\n  width: 40px;\n  background-image: url(\"../../../hh/error.png\");\n  background-size: 100% 100%;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipRight__wgmYo {\n  display: flex;\n  flex-direction: column;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipRight__wgmYo .index-module_top__-S1lN {\n  width: 197px;\n  height: 20px;\n  font-size: 16px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: bold;\n  color: #333333;\n  line-height: 19px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipRight__wgmYo .index-module_bottom__9CkYB {\n  width: 379px;\n  height: 14px;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #999999;\n  line-height: 14px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_tip__irD9k {\n  height: 14px;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: bold;\n  color: #2752e7;\n  line-height: 14px;\n  margin-top: 8px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_sealInfo__1-N-D {\n  margin-top: 8px;\n  height: 14px;\n  margin-left: 42px;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #666666;\n  line-height: 14px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_timeInfoLeft__qkGHi {\n  display: flex;\n  flex-direction: column;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_timeInfoLeft__qkGHi .index-module_leftInfo__ZcicF {\n  height: 14px;\n  font-size: 12px;\n  margin-left: 40px;\n  margin-top: 8px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #666666;\n  line-height: 14px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_btns__r1wG- {\n  padding: 12px 48px 10px 48px;\n  display: flex;\n  justify-content: space-between;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_btn__bF-4C {\n  height: 27px;\n  background-color: #fff;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: bold;\n  color: #2752e7;\n  border: 1px solid #2752e7;\n  border-radius: 6px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_btn__bF-4C:hover {\n  cursor: pointer;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_okBtn__Syx-f {\n  width: 99px;\n  height: 34px;\n  color: #fff;\n  display: flex;\n  position: absolute;\n  bottom: 30px;\n  right: 20px;\n  justify-content: center;\n  align-items: center;\n  background: #2752e7;\n  border-radius: 4px 4px 4px 4px;\n  opacity: 1;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_okBtn__Syx-f:hover {\n  cursor: pointer;\n}\n";
     var styles = {"certInfo":"index-module_certInfo__Ifnhj","title":"index-module_title__iwY6-","close":"index-module_close__4JCKl","div":"index-module_div__S2OY7","left":"index-module_left__ib4hl","right":"index-module_right__9f6fi","okBtn":"index-module_okBtn__Syx-f","maskContainer":"index-module_maskContainer__Wdkgl","mask":"index-module_mask__OibLq","hide":"index-module_hide__ZVUcR","content":"index-module_content__ZSw-p","titleTip":"index-module_titleTip__pvglu","titleTipLeft":"index-module_titleTipLeft__2env0","titleTipRight":"index-module_titleTipRight__wgmYo","top":"index-module_top__-S1lN","bottom":"index-module_bottom__9CkYB","tip":"index-module_tip__irD9k","sealInfo":"index-module_sealInfo__1-N-D","timeInfoLeft":"index-module_timeInfoLeft__qkGHi","leftInfo":"index-module_leftInfo__ZcicF","btns":"index-module_btns__r1wG-","btn":"index-module_btn__bF-4C"};
     styleInject(css_248z);
 
@@ -120293,7 +119631,7 @@ var pdfParser = (function (documentReader) {
     }
     function showSignSealTip(rootEle, signSealTime, signSealInfo) {
         var elementGuid = newGuid();
-        var signSealEle = "<div id=\"".concat(elementGuid, "\" class='").concat(styles.maskContainer, "'>\n    <div class='").concat(styles.mask, "'>\n          <div class='").concat(styles.title, "'> \u7B7E\u7AE0\u4FE1\u606F <span class='").concat(styles.close, "' onclick=\"document.getElementById('").concat(elementGuid, "').remove()\">\n          <img width=100% title=\"\u5173\u95ED\" src=\"data:image/png;base64,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\" />\n      </span></div>\n      <div class='").concat(styles.content, "'>\n        <div class='").concat(styles.titleTip, "'>\n          <div class='").concat(styles.titleTipLeft, "'></div>\n          <div class='").concat(styles.titleTipRight, "'>\n            <div class='").concat(styles.top, "'>\u7B7E\u7AE0\u9A8C\u8BC1\u5931\u8D25\uFF0C\u7B7E\u7AE0\u65E0\u6548\u3002</div>\n            <div class='").concat(styles.bottom, "'>-\u7B7E\u7AE0\u9A8C\u8BC1\u5931\u8D25\uFF08\u53C2\u8003\u8865\u5145\u5217\u8868\uFF0C\u4E5F\u53EF\u4EE5\u5728\u6B64\u5904\u663E\u793A\u4EE3\u7801\u9A8C\u8BC1\u4FE1\u606F\u8BF4\u660E\uFF09</div>\n          </div>\n        </div> \n        <hr />\n        <div>\n          <div class='").concat(styles.tip, "'>\u7B7E\u7AE0\u4FE1\u606F</div>\n          <div class='").concat(styles.sealInfo, "'>\u7B7E\u7AE0\u8005\uFF1A\u67D0\u67D0\u67D0\u4FE1\u606F\u6280\u672F\u6709\u9650\u516C\u53F8</div>\n          ").concat(signSealTime.map(function () { return "<div class='".concat(styles.sealInfo, "'>\u7B7E\u7AE0\u65F6\u95F4\uFF1A2020\u5E7410\u670810\u65E5  09:28:25</div>"); }).join("\r\n"), "\n        </div>\n        <hr/>\n        <div>\n            <div class='").concat(styles.tip, "'>\u7B7E\u7AE0\u5C5E\u6027</div>\n            <div class='").concat(styles.btns, "'>\n              <button class='").concat(styles.btn, "' id=\"certInfo\">\u7B7E\u7AE0\u8005\u8BC1\u4E66</button>\n              <button class='").concat(styles.btn, "' id=\"\">\u5370\u7AE0\u4FE1\u606F</button>\n              <button class='").concat(styles.btn, "' id=\"createCert\">\u5236\u7AE0\u8005\u8BC1\u4E66</button>\n            </div>\n        </div>\n        <hr/>\n        <div >\n            <div class='").concat(styles.tip, "'>\u65F6\u95F4\u6233\u4FE1\u606F</div>\n            <div style=display:flex;flex-direction:row;>\n                <div class='").concat(styles.timeInfoLeft, "'>\n                    <div class='").concat(styles.leftInfo, "'>\u8BE5\u5370\u7AE0\u5305\u542B\u65F6\u95F4\u6233\uFF0C\u65F6\u95F4\u6233\u5DF2\u9A8C\u8BC1\u6210\u529F\u3002</div>\n                    <div class='").concat(styles.leftInfo, "'>\u5355\u51FB\u201C\u8BE6\u7EC6\u4FE1\u606F\u201D\u67E5\u770B\u65F6\u95F4\u6233\u7684\u9881\u53D1\u673A\u6784\u8BC1\u4E66\u7684\u8BE6\u7EC6\u4FE1\u606F\u3002</div>\n                </div>\n                <div>\n                  <button class='").concat(styles.btn, "'>\u8BE6\u7EC6\u4FE1\u606F</button>\n                </div>\n            </div>\n        </div>\n        <div class='").concat(styles.okBtn, "'>\u786E\u5B9A</div>\n      </div>\n    </div>\n  </div>");
+        var signSealEle = "<div id=\"".concat(elementGuid, "\" class='").concat(styles.maskContainer, "'>\n    <div class='").concat(styles.mask, "'>\n          <div class='").concat(styles.title, "'> \u7B7E\u7AE0\u4FE1\u606F <span class='").concat(styles.close, "' onclick=\"document.getElementById('").concat(elementGuid, "').remove()\">\n          <img width=100% title=\"\u5173\u95ED\" src=\"data:image/png;base64,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\" />\n      </span></div>\n      <div class='").concat(styles.content, "'>\n        <div class='").concat(styles.titleTip, "'>\n          <div class='").concat(styles.titleTipLeft, "'></div>\n          <div class='").concat(styles.titleTipRight, "'>\n            <div class='").concat(styles.top, "'>\u7B7E\u7AE0\u9A8C\u8BC1\u5931\u8D25\uFF0C\u7B7E\u7AE0\u65E0\u6548\u3002</div>\n            <div class='").concat(styles.bottom, "'>-\u7B7E\u7AE0\u9A8C\u8BC1\u5931\u8D25\uFF08\u53C2\u8003\u8865\u5145\u5217\u8868\uFF0C\u4E5F\u53EF\u4EE5\u5728\u6B64\u5904\u663E\u793A\u4EE3\u7801\u9A8C\u8BC1\u4FE1\u606F\u8BF4\u660E\uFF09</div>\n          </div>\n        </div> \n        <hr />\n        <div>\n          <div class='").concat(styles.tip, "'>\u7B7E\u7AE0\u4FE1\u606F</div>\n          <div class='").concat(styles.sealInfo, "'>\u7B7E\u7AE0\u8005\uFF1A\u67D0\u67D0\u67D0\u4FE1\u606F\u6280\u672F\u6709\u9650\u516C\u53F8</div>\n          ").concat(signSealTime.map(function () { return "<div class='".concat(styles.sealInfo, "'>\u7B7E\u7AE0\u65F6\u95F4\uFF1A2020\u5E7410\u670810\u65E5  09:28:25</div>"); }).join("\r\n"), "\n        </div>\n        <hr/>\n        <div>\n            <div class='").concat(styles.tip, "'>\u7B7E\u7AE0\u5C5E\u6027</div>\n            <div class='").concat(styles.btns, "'>\n              <button class='").concat(styles.btn, "' id=\"certInfo\">\u7B7E\u7AE0\u8005\u8BC1\u4E66</button>\n              <button class='").concat(styles.btn, "' id=\"\">\u5370\u7AE0\u4FE1\u606F</button>\n              <button class='").concat(styles.btn, "' id=\"createCert\">\u5236\u7AE0\u8005\u8BC1\u4E66</button>\n            </div>\n        </div>\n        <hr/>\n        <div >\n            <div class='").concat(styles.tip, "'>\u65F6\u95F4\u6233\u4FE1\u606F</div>\n            <div style=display:flex;flex-direction:row;>\n                <div class='").concat(styles.timeInfoLeft, "'>\n                    <div class='").concat(styles.leftInfo, "'>\u8BE5\u5370\u7AE0\u5305\u542B\u65F6\u95F4\u6233\uFF0C\u65F6\u95F4\u6233\u5DF2\u9A8C\u8BC1\u6210\u529F\u3002</div>\n                    <div class='").concat(styles.leftInfo, "'>\u5355\u51FB\u201C\u8BE6\u7EC6\u4FE1\u606F\u201D\u67E5\u770B\u65F6\u95F4\u6233\u7684\u9881\u53D1\u673A\u6784\u8BC1\u4E66\u7684\u8BE6\u7EC6\u4FE1\u606F\u3002</div>\n                </div>\n                <div>\n                  <button class='").concat(styles.btn, "'>\u8BE6\u7EC6\u4FE1\u606F</button>\n                </div>\n            </div>\n        </div>\n        <div class='").concat(styles.okBtn, "' onclick=\"document.getElementById('").concat(elementGuid, "').remove()\">\u786E\u5B9A</div>\n      </div>\n    </div>\n  </div>");
         var div = document.createElement("div");
         div.innerHTML = signSealEle;
         var btn = div.querySelector("#certInfo");
