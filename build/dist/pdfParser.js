@@ -8572,7 +8572,7 @@ var pdfParser = (function (documentReader) {
     /**
      * 生成GUID
      */
-    const newGuid$1 = () => {
+    const newGuid = () => {
         var curguid = "";
         for (var i = 1; i <= 32; i++) {
             var id = Math.floor(Math.random() * 16.0).toString(16);
@@ -8788,6 +8788,7 @@ var pdfParser = (function (documentReader) {
     const endUpload = async (id, options) => socketReq({ cmd: '/getBigFileUploadResult', data: id }, options);
     const verifySeal = async (id, options) => socketReq({ cmd: '/seal/verify', data: id }, options);
     const getSealList = async (password, options) => socketReq({ cmd: '/sealMgr/getSealListByKeyNo', data: password }, options);
+    const signQF = async (req, options) => socketReq({ cmd: '/seal/signQF', data: { id: req.sealId, fileId: req.fileId, pageNum: req.page, x: req.positionX, y: req.positionY, size: req.size, keyPwd: req.pwd } }, options);
     const signMany = async (req, options) => socketReq({
         cmd: '/seal/signSiteBatch',
         data: {
@@ -8796,6 +8797,16 @@ var pdfParser = (function (documentReader) {
             keyPwd: req.pwd,
             pageList: req.pages.map((m) => { return { pageNum: m.page, x: m.positionX, y: m.positionY }; }),
         },
+    }, options);
+    const signKeyword = async (req, options) => socketReq({
+        cmd: '/seal/signKeyword',
+        data: {
+            id: req.sealId,
+            fileId: req.fileId,
+            keyPwd: req.pwd,
+            keyword: req.keyword,
+            keywordNo: req.keywordNo
+        }
     }, options);
 
     /**
@@ -8826,6 +8837,15 @@ var pdfParser = (function (documentReader) {
         return rst;
     };
     /**
+     * 骑缝章接口
+     * @param params
+     * @param options
+     */
+    const sealInQF = async (params, options) => {
+        const rst = await signQF(params, options);
+        return rst;
+    };
+    /**
      * 多页签章接口
      * @param params
      * @param options
@@ -8833,6 +8853,16 @@ var pdfParser = (function (documentReader) {
      */
     const sealInMany = async (params, options) => {
         const rst = await signMany(params, options);
+        return rst;
+    };
+    /**
+     * 关键字签章
+     * @param params
+     * @param options
+     * @returns
+     */
+    const sealInKeyword = async (params, options) => {
+        const rst = await signKeyword(params, options);
         return rst;
     };
 
@@ -8856,7 +8886,7 @@ var pdfParser = (function (documentReader) {
                     md5Reader.append(sliceBlob);
                     blobArray.push({
                         index,
-                        sliceId: newGuid$1(),
+                        sliceId: newGuid(),
                         buffer: sliceBlob
                     });
                 }
@@ -8888,7 +8918,7 @@ var pdfParser = (function (documentReader) {
             if (isNull(rawHtmlEle) || isNull(rawHtmlEle.files) || rawHtmlEle.files.length <= 0) {
                 return reject('检测到文件为空, 文件不能为空');
             }
-            const fileGuid = newGuid$1();
+            const fileGuid = newGuid();
             let sliceRsp;
             const shardSize = 5 * 1024 * 1024;
             try {
@@ -99908,20 +99938,12 @@ var pdfParser = (function (documentReader) {
     		// Callback mode
     		if (fn.length === 1) {
     			var called = false;
-    			try {
-    				fn(function (err, ret) {
-    					if (!called) {
-    						called = true;
-    						done(locked, err, ret);
-    					}
-    				});
-    			} catch (err) {
-    				// catching error thrown in user function fn
+    			fn(function (err, ret) {
     				if (!called) {
     					called = true;
-    					done(locked, err);
+    					done(locked, err, ret);
     				}
-    			}
+    			});
     		}
     		else {
     			// Promise mode
@@ -100014,9 +100036,10 @@ var pdfParser = (function (documentReader) {
     		};
     	};
 
-    	var fnx = keys.reduceRight(function (prev, key) {
-    		return getFn(key, prev);
-    	}, fn);
+    	var fnx = fn;
+    	keys.reverse().forEach(function (key) {
+    		fnx = getFn(key, fnx);
+    	});
 
     	if (typeof (cb) === 'function') {
     		fnx(cb);
@@ -117421,13 +117444,13 @@ var pdfParser = (function (documentReader) {
       }
     }
 
-    var css_248z$b = ".index-module_pdfContentsWrapper__ULQ6a {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  right: 0;\n  left: 0;\n  overflow: auto;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_fullPrompt__t4Ahj {\n  position: fixed;\n  top: 86px;\n  left: 50%;\n  width: 236px;\n  height: 72px;\n  margin-left: -118px;\n  border-radius: 13px 13px 13px 13px;\n  background: #d9d9d9;\n  z-index: 999;\n  font-size: 24px;\n  font-family: Inter-Regular, Inter;\n  font-weight: 400;\n  color: #333333;\n  line-height: 72px;\n  text-align: center;\n  transition: all 0.3s;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_pdfContentWrapper__RVXhB {\n  position: relative;\n  margin: 0 auto 20px auto;\n  overflow: hidden;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_pdfContentWrapper__RVXhB > .index-module_moveContent__-3rlw {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  cursor: move;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_pdfContentWrapper__RVXhB > .index-module_pdfContent__0iB1P {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_pdfContentWrapper__RVXhB > .index-module_textLayer__d8Dp3 {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_pdfContentWrapper__RVXhB > .index-module_textLayer__d8Dp3 > span {\n  display: block;\n  position: absolute;\n}\n";
-    var styles$a = {"pdfContentsWrapper":"index-module_pdfContentsWrapper__ULQ6a","fullPrompt":"index-module_fullPrompt__t4Ahj","pdfContentWrapper":"index-module_pdfContentWrapper__RVXhB","moveContent":"index-module_moveContent__-3rlw","pdfContent":"index-module_pdfContent__0iB1P","textLayer":"index-module_textLayer__d8Dp3"};
-    styleInject(css_248z$b);
+    var css_248z$a = ".index-module_pdfContentsWrapper__ULQ6a {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  right: 0;\n  left: 0;\n  overflow: auto;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_fullPrompt__t4Ahj {\n  position: fixed;\n  top: 86px;\n  left: 50%;\n  width: 236px;\n  height: 72px;\n  margin-left: -118px;\n  border-radius: 13px 13px 13px 13px;\n  background: #d9d9d9;\n  z-index: 999;\n  font-size: 24px;\n  font-family: Inter-Regular, Inter;\n  font-weight: 400;\n  color: #333333;\n  line-height: 72px;\n  text-align: center;\n  transition: all 0.3s;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_pdfContentWrapper__RVXhB {\n  position: relative;\n  margin: 0 auto 20px auto;\n  overflow: hidden;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_pdfContentWrapper__RVXhB > .index-module_moveContent__-3rlw {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  cursor: move;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_pdfContentWrapper__RVXhB > .index-module_pdfContent__0iB1P {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_pdfContentWrapper__RVXhB > .index-module_textLayer__d8Dp3 {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n}\n.index-module_pdfContentsWrapper__ULQ6a > .index-module_pdfContentWrapper__RVXhB > .index-module_textLayer__d8Dp3 > span {\n  display: block;\n  position: absolute;\n}\n";
+    var styles$9 = {"pdfContentsWrapper":"index-module_pdfContentsWrapper__ULQ6a","fullPrompt":"index-module_fullPrompt__t4Ahj","pdfContentWrapper":"index-module_pdfContentWrapper__RVXhB","moveContent":"index-module_moveContent__-3rlw","pdfContent":"index-module_pdfContent__0iB1P","textLayer":"index-module_textLayer__d8Dp3"};
+    styleInject(css_248z$a);
 
     function createFullPromptEle(text) {
         var fullPromptEle = document.createElement("div");
-        fullPromptEle.className = styles$a.fullPrompt;
+        fullPromptEle.className = styles$9.fullPrompt;
         return fullPromptEle;
     }
     var fullPromptEleDefaultTexte = "按Esc推出全屏";
@@ -117493,7 +117516,7 @@ var pdfParser = (function (documentReader) {
              */
             this._rotation = 0;
             this._initOptions = this._initOptions || {};
-            this._pageWrapperEle.className = styles$a.pdfContentsWrapper;
+            this._pageWrapperEle.className = styles$9.pdfContentsWrapper;
             bindFullEvent(this._pageWrapperEle, this._pageWrapperFullSreenchange.bind(this));
             this._pageWrapperEle.onscroll = this._pageWrapperEleOnScroll.bind(this);
         }
@@ -117738,9 +117761,9 @@ var pdfParser = (function (documentReader) {
                         case 1:
                             if (!(i < doc.numPages)) return [3 /*break*/, 5];
                             pageContentWrapper = document.createElement("div");
-                            pageContentWrapper.className = styles$a.pdfContentWrapper;
+                            pageContentWrapper.className = styles$9.pdfContentWrapper;
                             pageEle = document.createElement("canvas");
-                            pageEle.className = styles$a.pdfContent;
+                            pageEle.className = styles$9.pdfContent;
                             this._pageEleList[i] = pageEle;
                             pageContentWrapper.appendChild(pageEle);
                             this._pageWrapperEle.appendChild(pageContentWrapper);
@@ -118043,9 +118066,9 @@ var pdfParser = (function (documentReader) {
         return PagesComponent;
     }());
 
-    var css_248z$a = ".index-module_thumbnail__JAy02 {\n  width: 100%;\n  height: 100%;\n  overflow: auto;\n  position: relative;\n  transition: all 0.3s;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn {\n  margin: 0 auto 16px auto;\n  cursor: pointer;\n  position: relative;\n  overflow: hidden;\n  font-size: 0;\n  float: left;\n  margin-left: 25px;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn > img {\n  display: inline-block;\n  border: 2px solid transparent;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn > img:hover,\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn > img.index-module_active__z-HN- {\n  border: 2px solid #7991e5;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn > .index-module_pageNo__z8q-K {\n  bottom: 0;\n  height: 35px;\n  line-height: 35px;\n  text-align: center;\n  left: 0;\n  right: 0;\n  color: #333333;\n  font-size: 16px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn:before {\n  left: 8px;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn:after {\n  right: 8px;\n}\n";
-    var styles$9 = {"thumbnail":"index-module_thumbnail__JAy02","thumbnailWrapper":"index-module_thumbnailWrapper__-0YTn","active":"index-module_active__z-HN-","pageNo":"index-module_pageNo__z8q-K"};
-    styleInject(css_248z$a);
+    var css_248z$9 = ".index-module_thumbnail__JAy02 {\n  width: 100%;\n  height: 100%;\n  overflow: auto;\n  position: relative;\n  transition: all 0.3s;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn {\n  margin: 0 auto 16px auto;\n  cursor: pointer;\n  position: relative;\n  overflow: hidden;\n  font-size: 0;\n  float: left;\n  margin-left: 25px;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn > img {\n  display: inline-block;\n  border: 2px solid transparent;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn > img:hover,\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn > img.index-module_active__z-HN- {\n  border: 2px solid #7991e5;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn > .index-module_pageNo__z8q-K {\n  bottom: 0;\n  height: 35px;\n  line-height: 35px;\n  text-align: center;\n  left: 0;\n  right: 0;\n  color: #333333;\n  font-size: 16px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn:before {\n  left: 8px;\n}\n.index-module_thumbnail__JAy02 .index-module_thumbnailWrapper__-0YTn:after {\n  right: 8px;\n}\n";
+    var styles$8 = {"thumbnail":"index-module_thumbnail__JAy02","thumbnailWrapper":"index-module_thumbnailWrapper__-0YTn","active":"index-module_active__z-HN-","pageNo":"index-module_pageNo__z8q-K"};
+    styleInject(css_248z$9);
 
     var ThumbnailComponent = /** @class */ (function () {
         function ThumbnailComponent(_pageComponent) {
@@ -118071,7 +118094,7 @@ var pdfParser = (function (documentReader) {
              */
             this.loadStatus = "no";
             this._imgSize = undefined;
-            this._wrapperEle.className = styles$9.thumbnail;
+            this._wrapperEle.className = styles$8.thumbnail;
             this._pageComponent.addPageScrollEvent(this._pageOnScroll.bind(this));
         }
         /**
@@ -118087,10 +118110,10 @@ var pdfParser = (function (documentReader) {
                         case 0: return [4 /*yield*/, waitBreakUndefined(function () { return _this._eleList[pageIndex - 1]; })];
                         case 1:
                             targetEle = _a.sent();
-                            this._wrapperEle.querySelectorAll("." + styles$9.active).forEach(function (item) {
-                                item.className = item.className.split(" " + styles$9.active).join("");
+                            this._wrapperEle.querySelectorAll("." + styles$8.active).forEach(function (item) {
+                                item.className = item.className.split(" " + styles$8.active).join("");
                             });
-                            targetEle.className += " " + styles$9.active;
+                            targetEle.className += " " + styles$8.active;
                             this._scrollToCurrentThumbnail();
                             return [2 /*return*/];
                     }
@@ -118101,7 +118124,7 @@ var pdfParser = (function (documentReader) {
          * 滚动到当前的缩略图
          */
         ThumbnailComponent.prototype._scrollToCurrentThumbnail = function () {
-            var targetEle = this._wrapperEle.querySelector("." + styles$9.active);
+            var targetEle = this._wrapperEle.querySelector("." + styles$8.active);
             var pageIndex = parseInt(targetEle.getAttribute("i"));
             targetEle = targetEle.parentElement;
             var wrapperWidth = this._wrapperEle.clientWidth;
@@ -118138,7 +118161,7 @@ var pdfParser = (function (documentReader) {
                             console.log("attach...");
                             index = pageIndex - 1;
                             wrapperEle = document.createElement("div");
-                            wrapperEle.className = styles$9.thumbnailWrapper;
+                            wrapperEle.className = styles$8.thumbnailWrapper;
                             imgEle = document.createElement("img");
                             return [4 /*yield*/, new Promise(function (resovle) {
                                     pageCanvas.toBlob(function (blob) {
@@ -118151,7 +118174,7 @@ var pdfParser = (function (documentReader) {
                             imgEle.setAttribute("i", pageIndex + "");
                             pageNoText = pageIndex + "/" + doc.numPages;
                             pageNoDiv = document.createElement("div");
-                            pageNoDiv.className = styles$9.pageNo;
+                            pageNoDiv.className = styles$8.pageNo;
                             pageNoDiv.innerText = pageNoText;
                             wrapperEle.title = pageNoText;
                             wrapperEle.appendChild(imgEle);
@@ -118160,7 +118183,7 @@ var pdfParser = (function (documentReader) {
                                 _this._pageComponent.jumpTo(pageIndex);
                             };
                             if (pageIndex === 1) {
-                                imgEle.className += " " + styles$9.active;
+                                imgEle.className += " " + styles$8.active;
                             }
                             this._wrapperEle.appendChild(wrapperEle);
                             this._eleList[index] = imgEle;
@@ -118223,9 +118246,9 @@ var pdfParser = (function (documentReader) {
         return ThumbnailComponent;
     }());
 
-    var css_248z$9 = ".index-module_outlines__OpJKF {\n  width: 100%;\n  height: 100%;\n  overflow-x: hidden;\n  overflow-y: auto;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY {\n  width: 100%;\n  height: 20px;\n  overflow: hidden;\n  position: relative;\n  cursor: pointer;\n  margin-bottom: 4px;\n  line-height: 20px;\n  padding: 5px 0;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY:hover {\n  background: #cbd7ff;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_icon__GzmKM {\n  width: 20px;\n  height: 20px;\n  text-align: center;\n  line-height: 20px;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_icon__GzmKM > img {\n  width: 14px;\n  height: 14px;\n  display: inline-block;\n  margin: 0 auto;\n  vertical-align: middle;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_text__PPdfP {\n  width: calc(100% - 20px);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  line-height: 20px;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_text__PPdfP > span {\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-size: 12px;\n  font-weight: 400;\n  color: #444c5e;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_icon__GzmKM,\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_text__PPdfP {\n  float: left;\n}\n";
-    var styles$8 = {"outlines":"index-module_outlines__OpJKF","outline":"index-module_outline__eSCSY","icon":"index-module_icon__GzmKM","text":"index-module_text__PPdfP"};
-    styleInject(css_248z$9);
+    var css_248z$8 = ".index-module_outlines__OpJKF {\n  width: 100%;\n  height: 100%;\n  overflow-x: hidden;\n  overflow-y: auto;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY {\n  width: 100%;\n  height: 20px;\n  overflow: hidden;\n  position: relative;\n  cursor: pointer;\n  margin-bottom: 4px;\n  line-height: 20px;\n  padding: 5px 0;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY:hover {\n  background: #cbd7ff;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_icon__GzmKM {\n  width: 20px;\n  height: 20px;\n  text-align: center;\n  line-height: 20px;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_icon__GzmKM > img {\n  width: 14px;\n  height: 14px;\n  display: inline-block;\n  margin: 0 auto;\n  vertical-align: middle;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_text__PPdfP {\n  width: calc(100% - 20px);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  line-height: 20px;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_text__PPdfP > span {\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-size: 12px;\n  font-weight: 400;\n  color: #444c5e;\n}\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_icon__GzmKM,\n.index-module_outlines__OpJKF > .index-module_outline__eSCSY > .index-module_text__PPdfP {\n  float: left;\n}\n";
+    var styles$7 = {"outlines":"index-module_outlines__OpJKF","outline":"index-module_outline__eSCSY","icon":"index-module_icon__GzmKM","text":"index-module_text__PPdfP"};
+    styleInject(css_248z$8);
 
     var outlineFlagImgUrlStr = window.URL.createObjectURL(base64ToBlob("data:image/png;base64,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"));
     var OutlineComponent = /** @class */ (function () {
@@ -118243,7 +118266,7 @@ var pdfParser = (function (documentReader) {
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            this._wrapperEle.className = styles$8.outlines;
+                            this._wrapperEle.className = styles$7.outlines;
                             return [4 /*yield*/, this._doc().getOutline()];
                         case 1:
                             outlines = _a.sent();
@@ -118265,14 +118288,14 @@ var pdfParser = (function (documentReader) {
                                             _b.label = 2;
                                         case 2:
                                             outlineEle = document.createElement("div");
-                                            outlineEle.className = styles$8.outline;
+                                            outlineEle.className = styles$7.outline;
                                             iconDiv = document.createElement("div");
-                                            iconDiv.className = styles$8.icon;
+                                            iconDiv.className = styles$7.icon;
                                             iconImg = document.createElement("img");
                                             iconImg.src = outlineFlagImgUrlStr;
                                             iconDiv.appendChild(iconImg);
                                             textDiv = document.createElement("div");
-                                            textDiv.className = styles$8.text;
+                                            textDiv.className = styles$7.text;
                                             textSpan = document.createElement("span");
                                             textSpan.innerText = outline.title;
                                             textDiv.appendChild(textSpan);
@@ -118330,13 +118353,13 @@ var pdfParser = (function (documentReader) {
         return OutlineComponent;
     }());
 
-    var css_248z$8 = ".index-module_textLayer__DnO8Y {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n}\n.index-module_textLayer__DnO8Y > span {\n  display: block;\n  position: absolute;\n}\n.index-module_moveContent__A4Md1 {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  cursor: move;\n}\n";
-    var styles$7 = {"textLayer":"index-module_textLayer__DnO8Y","moveContent":"index-module_moveContent__A4Md1"};
-    styleInject(css_248z$8);
-
-    var css_248z$7 = ".pdf-module_textLayer__fb7Tz {\n  position: absolute;\n  text-align: initial;\n  left: 0;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  overflow: hidden;\n  opacity: 0.2;\n  line-height: 1;\n  -webkit-text-size-adjust: none;\n  -moz-text-size-adjust: none;\n  text-size-adjust: none;\n  forced-color-adjust: none;\n}\n.pdf-module_textLayer__fb7Tz span,\n.pdf-module_textLayer__fb7Tz br {\n  color: transparent;\n  position: absolute;\n  white-space: pre;\n  cursor: text;\n  transform-origin: 0% 0%;\n}\n/* Only necessary in Google Chrome, see issue 14205, and most unfortunately\n   * the problem doesn't show up in \"text\" reference tests. */\n.pdf-module_textLayer__fb7Tz span.pdf-module_markedContent__TyiUD {\n  top: 0;\n  height: 0;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B {\n  margin: -1px;\n  padding: 1px;\n  background-color: #b400aa;\n  border-radius: 4px;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B.pdf-module_appended__Y3BJx {\n  position: initial;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B.pdf-module_begin__ynY-4 {\n  border-radius: 4px 0 0 4px;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B.pdf-module_end__pJ7vn {\n  border-radius: 0 4px 4px 0;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B.pdf-module_middle__8LxsR {\n  border-radius: 0;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B.pdf-module_selected__tFFiO {\n  background-color: #006400;\n}\n.pdf-module_textLayer__fb7Tz ::-moz-selection {\n  background: #0000ff;\n}\n.pdf-module_textLayer__fb7Tz ::selection {\n  background: #0000ff;\n}\n/* Avoids https://github.com/mozilla/pdf.js/issues/13840 in Chrome */\n.pdf-module_textLayer__fb7Tz br::-moz-selection {\n  background: transparent;\n}\n.pdf-module_textLayer__fb7Tz br::selection {\n  background: transparent;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_endOfContent__-NBFe {\n  display: block;\n  position: absolute;\n  left: 0;\n  top: 100%;\n  right: 0;\n  bottom: 0;\n  z-index: -1;\n  cursor: default;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  user-select: none;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_endOfContent__-NBFe.pdf-module_active__0PeQA {\n  top: 0;\n}\n:root {\n  --annotation-unfocused-field-background: url(\"data:image/svg+xml;charset=UTF-8,<svg width='1px' height='1px' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' style='fill:rgba(0, 54, 255, 0.13);'/></svg>\");\n}\n.pdf-module_annotationLayer__uGgO5 section {\n  position: absolute;\n  text-align: initial;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_linkAnnotation__tcqHa > a,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_pushButton__j1AYl > a {\n  position: absolute;\n  font-size: 1em;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_pushButton__j1AYl > canvas {\n  position: relative;\n  top: 0;\n  left: 0;\n  z-index: -1;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_linkAnnotation__tcqHa > a:hover,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_pushButton__j1AYl > a:hover {\n  opacity: 0.2;\n  background: #ffff00;\n  box-shadow: 0 2px 10px #ffff00;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textAnnotation__DFTlL img {\n  position: absolute;\n  cursor: pointer;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input {\n  background-image: var(--annotation-unfocused-field-background);\n  border: 1px solid transparent;\n  box-sizing: border-box;\n  font-size: 9px;\n  height: 100%;\n  margin: 0;\n  padding: 0 3px;\n  vertical-align: top;\n  width: 100%;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select option {\n  padding: 0;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input {\n  border-radius: 50%;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea {\n  font: message-box;\n  font-size: 9px;\n  resize: none;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input[disabled],\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea[disabled],\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select[disabled],\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input[disabled],\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input[disabled] {\n  background: none;\n  border: 1px solid transparent;\n  cursor: not-allowed;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input:hover,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea:hover,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select:hover,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:hover,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input:hover {\n  border: 1px solid #000000;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input:focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea:focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select:focus {\n  background: none;\n  border: 1px solid transparent;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input :focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea :focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select :focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB :focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 :focus {\n  background-image: none;\n  background-color: transparent;\n  outline: auto;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:before,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:after,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input:checked:before {\n  background-color: #000000;\n  content: \"\";\n  display: block;\n  position: absolute;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:before,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:after {\n  height: 80%;\n  left: 45%;\n  width: 1px;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:before {\n  transform: rotate(45deg);\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:after {\n  transform: rotate(-45deg);\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input:checked:before {\n  border-radius: 50%;\n  height: 50%;\n  left: 30%;\n  top: 20%;\n  width: 50%;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input.pdf-module_comb__MLF-c {\n  font-family: monospace;\n  padding-left: 2px;\n  padding-right: 0;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input.pdf-module_comb__MLF-c:focus {\n  /*\n     * Letter spacing is placed on the right side of each character. Hence, the\n     * letter spacing of the last character may be placed outside the visible\n     * area, causing horizontal scrolling. We avoid this by extending the width\n     * when the element has focus and revert this when it loses focus.\n     */\n  width: 103%;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input {\n  -webkit-appearance: none;\n  -moz-appearance: none;\n  appearance: none;\n  padding: 0;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popupWrapper__HkU5f {\n  position: absolute;\n  width: 20em;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popup__brkaW {\n  position: absolute;\n  z-index: 200;\n  max-width: 20em;\n  background-color: #ffff99;\n  box-shadow: 0 2px 5px #888888;\n  border-radius: 2px;\n  padding: 6px;\n  margin-left: 5px;\n  cursor: pointer;\n  font: message-box;\n  font-size: 9px;\n  white-space: normal;\n  word-wrap: break-word;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popup__brkaW > * {\n  font-size: 9px;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popup__brkaW h1 {\n  display: inline-block;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popupDate__N-7C7 {\n  display: inline-block;\n  margin-left: 5px;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popupContent__E-Mw9 {\n  border-top: 1px solid #333333;\n  margin-top: 2px;\n  padding-top: 2px;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_richText__fDxbu > * {\n  white-space: pre-wrap;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_highlightAnnotation__YCs9h,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_underlineAnnotation__Wpq-Z,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_squigglyAnnotation__7fcwy,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_strikeoutAnnotation__C1DIA,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_freeTextAnnotation__5x-LB,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_lineAnnotation__ZdUQZ svg line,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_squareAnnotation__Lk-eW svg rect,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_circleAnnotation__gOMkp svg ellipse,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_polylineAnnotation__sy35X svg polyline,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_polygonAnnotation__Ec6ZG svg polygon,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_caretAnnotation__8XwLZ,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_inkAnnotation__28tm8 svg polyline,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_stampAnnotation__Ahlkg,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_fileAttachmentAnnotation__4Bxz2 {\n  cursor: pointer;\n}\n:root {\n  --xfa-unfocused-field-background: url(\"data:image/svg+xml;charset=UTF-8,<svg width='1px' height='1px' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' style='fill:rgba(0, 54, 255, 0.13);'/></svg>\");\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B {\n  margin: -1px;\n  padding: 1px;\n  background-color: #efcbed;\n  border-radius: 4px;\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B.pdf-module_appended__Y3BJx {\n  position: initial;\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B.pdf-module_begin__ynY-4 {\n  border-radius: 4px 0 0 4px;\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B.pdf-module_end__pJ7vn {\n  border-radius: 0 4px 4px 0;\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B.pdf-module_middle__8LxsR {\n  border-radius: 0;\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B.pdf-module_selected__tFFiO {\n  background-color: #cbdfcb;\n}\n.pdf-module_xfaLayer__EbU1O ::-moz-selection {\n  background: #0000ff;\n}\n.pdf-module_xfaLayer__EbU1O ::selection {\n  background: #0000ff;\n}\n.pdf-module_xfaPage__jflSj {\n  overflow: hidden;\n  position: relative;\n}\n.pdf-module_xfaContentarea__2J781 {\n  position: absolute;\n}\n.pdf-module_xfaPrintOnly__Ffx4e {\n  display: none;\n}\n.pdf-module_xfaLayer__EbU1O {\n  position: absolute;\n  text-align: initial;\n  top: 0;\n  left: 0;\n  transform-origin: 0 0;\n  line-height: 1.2;\n}\n.pdf-module_xfaLayer__EbU1O * {\n  color: inherit;\n  font: inherit;\n  font-style: inherit;\n  font-weight: inherit;\n  font-kerning: inherit;\n  letter-spacing: -0.01px;\n  text-align: inherit;\n  text-decoration: inherit;\n  box-sizing: border-box;\n  background-color: transparent;\n  padding: 0;\n  margin: 0;\n  pointer-events: auto;\n  line-height: inherit;\n}\n.pdf-module_xfaLayer__EbU1O div {\n  pointer-events: none;\n}\n.pdf-module_xfaLayer__EbU1O svg {\n  pointer-events: none;\n}\n.pdf-module_xfaLayer__EbU1O svg * {\n  pointer-events: none;\n}\n.pdf-module_xfaLayer__EbU1O a {\n  color: blue;\n}\n.pdf-module_xfaRich__3LtJL li {\n  margin-left: 3em;\n}\n.pdf-module_xfaFont__QljTs {\n  color: black;\n  font-weight: normal;\n  font-kerning: none;\n  font-size: 10px;\n  font-style: normal;\n  letter-spacing: 0;\n  text-decoration: none;\n  vertical-align: 0;\n}\n.pdf-module_xfaCaption__lIemu {\n  overflow: hidden;\n  flex: 0 0 auto;\n}\n.pdf-module_xfaCaptionForCheckButton__APTw3 {\n  overflow: hidden;\n  flex: 1 1 auto;\n}\n.pdf-module_xfaLabel__YP2ju {\n  height: 100%;\n  width: 100%;\n}\n.pdf-module_xfaLeft__sskoH {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n}\n.pdf-module_xfaRight__qpdNI {\n  display: flex;\n  flex-direction: row-reverse;\n  align-items: center;\n}\n.pdf-module_xfaLeft__sskoH > .pdf-module_xfaCaption__lIemu,\n.pdf-module_xfaLeft__sskoH > .pdf-module_xfaCaptionForCheckButton__APTw3,\n.pdf-module_xfaRight__qpdNI > .pdf-module_xfaCaption__lIemu,\n.pdf-module_xfaRight__qpdNI > .pdf-module_xfaCaptionForCheckButton__APTw3 {\n  max-height: 100%;\n}\n.pdf-module_xfaTop__nzh3A {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n}\n.pdf-module_xfaBottom__pt25D {\n  display: flex;\n  flex-direction: column-reverse;\n  align-items: flex-start;\n}\n.pdf-module_xfaTop__nzh3A > .pdf-module_xfaCaption__lIemu,\n.pdf-module_xfaTop__nzh3A > .pdf-module_xfaCaptionForCheckButton__APTw3,\n.pdf-module_xfaBottom__pt25D > .pdf-module_xfaCaption__lIemu,\n.pdf-module_xfaBottom__pt25D > .pdf-module_xfaCaptionForCheckButton__APTw3 {\n  width: 100%;\n}\n.pdf-module_xfaBorder__F3w6x {\n  background-color: transparent;\n  position: absolute;\n  pointer-events: none;\n}\n.pdf-module_xfaWrapped__jZu3l {\n  width: 100%;\n  height: 100%;\n}\n.pdf-module_xfaTextfield__eUm-O:focus,\n.pdf-module_xfaSelect__ci6MM:focus {\n  background-image: none;\n  background-color: transparent;\n  outline: auto;\n  outline-offset: -1px;\n}\n.pdf-module_xfaCheckbox__diL6H:focus,\n.pdf-module_xfaRadio__8KRSJ:focus {\n  outline: auto;\n}\n.pdf-module_xfaTextfield__eUm-O,\n.pdf-module_xfaSelect__ci6MM {\n  height: 100%;\n  width: 100%;\n  flex: 1 1 auto;\n  border: none;\n  resize: none;\n  background-image: var(--xfa-unfocused-field-background);\n}\n.pdf-module_xfaTop__nzh3A > .pdf-module_xfaTextfield__eUm-O,\n.pdf-module_xfaTop__nzh3A > .pdf-module_xfaSelect__ci6MM,\n.pdf-module_xfaBottom__pt25D > .pdf-module_xfaTextfield__eUm-O,\n.pdf-module_xfaBottom__pt25D > .pdf-module_xfaSelect__ci6MM {\n  flex: 0 1 auto;\n}\n.pdf-module_xfaButton__DqBxa {\n  cursor: pointer;\n  width: 100%;\n  height: 100%;\n  border: none;\n  text-align: center;\n}\n.pdf-module_xfaLink__st76Q {\n  width: 100%;\n  height: 100%;\n  position: absolute;\n  top: 0;\n  left: 0;\n}\n.pdf-module_xfaCheckbox__diL6H,\n.pdf-module_xfaRadio__8KRSJ {\n  width: 100%;\n  height: 100%;\n  flex: 0 0 auto;\n  border: none;\n}\n.pdf-module_xfaRich__3LtJL {\n  white-space: pre-wrap;\n  width: 100%;\n  height: 100%;\n}\n.pdf-module_xfaImage__fp3Wp {\n  -o-object-position: left top;\n  object-position: left top;\n  -o-object-fit: contain;\n  object-fit: contain;\n  width: 100%;\n  height: 100%;\n}\n.pdf-module_xfaLrTb__VXUGl,\n.pdf-module_xfaRlTb__tQ7ho,\n.pdf-module_xfaTb__bgHsM {\n  display: flex;\n  flex-direction: column;\n  align-items: stretch;\n}\n.pdf-module_xfaLr__fUacG {\n  display: flex;\n  flex-direction: row;\n  align-items: stretch;\n}\n.pdf-module_xfaRl__W-t21 {\n  display: flex;\n  flex-direction: row-reverse;\n  align-items: stretch;\n}\n.pdf-module_xfaTb__bgHsM > div {\n  justify-content: left;\n}\n.pdf-module_xfaPosition__08nWA {\n  position: relative;\n}\n.pdf-module_xfaArea__76brw {\n  position: relative;\n}\n.pdf-module_xfaValignMiddle__aQfyG {\n  display: flex;\n  align-items: center;\n}\n.pdf-module_xfaTable__z-CCY {\n  display: flex;\n  flex-direction: column;\n  align-items: stretch;\n}\n.pdf-module_xfaTable__z-CCY .pdf-module_xfaRow__r0rmy {\n  display: flex;\n  flex-direction: row;\n  align-items: stretch;\n}\n.pdf-module_xfaTable__z-CCY .pdf-module_xfaRlRow__1xGNJ {\n  display: flex;\n  flex-direction: row-reverse;\n  align-items: stretch;\n  flex: 1;\n}\n.pdf-module_xfaTable__z-CCY .pdf-module_xfaRlRow__1xGNJ > div {\n  flex: 1;\n}\n.pdf-module_xfaNonInteractive__XnJUo input,\n.pdf-module_xfaNonInteractive__XnJUo textarea,\n.pdf-module_xfaDisabled__5U0zH input,\n.pdf-module_xfaDisabled__5U0zH textarea,\n.pdf-module_xfaReadOnly__kTHmR input,\n.pdf-module_xfaReadOnly__kTHmR textarea {\n  background: initial;\n}\n@media print {\n  .pdf-module_xfaTextfield__eUm-O,\n  .pdf-module_xfaSelect__ci6MM {\n    background: transparent;\n  }\n  .pdf-module_xfaSelect__ci6MM {\n    -webkit-appearance: none;\n    -moz-appearance: none;\n    appearance: none;\n    text-indent: 1px;\n    text-overflow: \"\";\n  }\n}\n:root {\n  --viewer-container-height: 0;\n  --pdfViewer-padding-bottom: 0;\n  --page-margin: 1px auto -8px;\n  --page-border: 9px solid transparent;\n  --spreadHorizontalWrapped-margin-LR: -3.5px;\n  --zoom-factor: 1;\n}\n@media screen and (forced-colors: active) {\n  :root {\n    --pdfViewer-padding-bottom: 9px;\n    --page-margin: 9px auto 0;\n    --page-border: none;\n    --spreadHorizontalWrapped-margin-LR: 4.5px;\n  }\n}\n.pdf-module_pdfViewer__jzaL9 {\n  padding-bottom: var(--pdfViewer-padding-bottom);\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_canvasWrapper__s-S9Z {\n  overflow: hidden;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW {\n  direction: ltr;\n  width: 816px;\n  height: 1056px;\n  margin: var(--page-margin);\n  position: relative;\n  overflow: visible;\n  border: var(--page-border);\n  background-clip: content-box;\n  -o-border-image: url(images/shadow.png) 9 9 repeat;\n  border-image: url(images/shadow.png) 9 9 repeat;\n  background-color: #ffffff;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_dummyPage__PoGj- {\n  position: relative;\n  width: 0;\n  height: var(--viewer-container-height);\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_removePageBorders__fYS6q .pdf-module_page__aaxkW {\n  margin: 0 auto 10px;\n  border: none;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_singlePageView__T6DC5 {\n  display: inline-block;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_singlePageView__T6DC5 .pdf-module_page__aaxkW {\n  margin: 0;\n  border: none;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollWrapped__ig11O,\n.pdf-module_spread__gLe3f {\n  margin-left: 3.5px;\n  margin-right: 3.5px;\n  text-align: center;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082,\n.pdf-module_spread__gLe3f {\n  white-space: nowrap;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_removePageBorders__fYS6q,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082 .pdf-module_spread__gLe3f,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollWrapped__ig11O .pdf-module_spread__gLe3f {\n  margin-left: 0;\n  margin-right: 0;\n}\n.pdf-module_spread__gLe3f .pdf-module_page__aaxkW,\n.pdf-module_spread__gLe3f .pdf-module_dummyPage__PoGj-,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082 .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollWrapped__ig11O .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082 .pdf-module_spread__gLe3f,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollWrapped__ig11O .pdf-module_spread__gLe3f {\n  display: inline-block;\n  vertical-align: middle;\n}\n.pdf-module_spread__gLe3f .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082 .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollWrapped__ig11O .pdf-module_page__aaxkW {\n  margin-left: var(--spreadHorizontalWrapped-margin-LR);\n  margin-right: var(--spreadHorizontalWrapped-margin-LR);\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_removePageBorders__fYS6q .pdf-module_spread__gLe3f .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_removePageBorders__fYS6q.pdf-module_scrollHorizontal__EQ082 .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_removePageBorders__fYS6q.pdf-module_scrollWrapped__ig11O .pdf-module_page__aaxkW {\n  margin-left: 5px;\n  margin-right: 5px;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW canvas {\n  margin: 0;\n  display: block;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW canvas[hidden] {\n  display: none;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW .pdf-module_loadingIcon__uLC7j {\n  position: absolute;\n  display: block;\n  left: 0;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  background: url(\"images/loading-icon.gif\") center no-repeat;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW .pdf-module_loadingIcon__uLC7j.pdf-module_notVisible__Vqnbr {\n  background: none;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_enablePermissions__jBOYY .pdf-module_textLayer__fb7Tz span {\n  -webkit-user-select: none !important;\n  -moz-user-select: none !important;\n  user-select: none !important;\n  cursor: not-allowed;\n}\n.pdf-module_pdfPresentationMode__SNnX7 .pdf-module_pdfViewer__jzaL9 {\n  padding-bottom: 0;\n}\n.pdf-module_pdfPresentationMode__SNnX7 .pdf-module_spread__gLe3f {\n  margin: 0;\n}\n.pdf-module_pdfPresentationMode__SNnX7 .pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW {\n  margin: 0 auto;\n  border: 2px solid transparent;\n}\n";
-    var pdfStyles = {"textLayer":"pdf-module_textLayer__fb7Tz","markedContent":"pdf-module_markedContent__TyiUD","highlight":"pdf-module_highlight__Wkh7B","appended":"pdf-module_appended__Y3BJx","begin":"pdf-module_begin__ynY-4","end":"pdf-module_end__pJ7vn","middle":"pdf-module_middle__8LxsR","selected":"pdf-module_selected__tFFiO","endOfContent":"pdf-module_endOfContent__-NBFe","active":"pdf-module_active__0PeQA","annotationLayer":"pdf-module_annotationLayer__uGgO5","linkAnnotation":"pdf-module_linkAnnotation__tcqHa","buttonWidgetAnnotation":"pdf-module_buttonWidgetAnnotation__Mbzdl","pushButton":"pdf-module_pushButton__j1AYl","textAnnotation":"pdf-module_textAnnotation__DFTlL","textWidgetAnnotation":"pdf-module_textWidgetAnnotation__zuOKR","choiceWidgetAnnotation":"pdf-module_choiceWidgetAnnotation__8OgG-","checkBox":"pdf-module_checkBox__qZBMB","radioButton":"pdf-module_radioButton__XjGo6","comb":"pdf-module_comb__MLF-c","popupWrapper":"pdf-module_popupWrapper__HkU5f","popup":"pdf-module_popup__brkaW","popupDate":"pdf-module_popupDate__N-7C7","popupContent":"pdf-module_popupContent__E-Mw9","richText":"pdf-module_richText__fDxbu","highlightAnnotation":"pdf-module_highlightAnnotation__YCs9h","underlineAnnotation":"pdf-module_underlineAnnotation__Wpq-Z","squigglyAnnotation":"pdf-module_squigglyAnnotation__7fcwy","strikeoutAnnotation":"pdf-module_strikeoutAnnotation__C1DIA","freeTextAnnotation":"pdf-module_freeTextAnnotation__5x-LB","lineAnnotation":"pdf-module_lineAnnotation__ZdUQZ","squareAnnotation":"pdf-module_squareAnnotation__Lk-eW","circleAnnotation":"pdf-module_circleAnnotation__gOMkp","polylineAnnotation":"pdf-module_polylineAnnotation__sy35X","polygonAnnotation":"pdf-module_polygonAnnotation__Ec6ZG","caretAnnotation":"pdf-module_caretAnnotation__8XwLZ","inkAnnotation":"pdf-module_inkAnnotation__28tm8","stampAnnotation":"pdf-module_stampAnnotation__Ahlkg","fileAttachmentAnnotation":"pdf-module_fileAttachmentAnnotation__4Bxz2","xfaLayer":"pdf-module_xfaLayer__EbU1O","xfaPage":"pdf-module_xfaPage__jflSj","xfaContentarea":"pdf-module_xfaContentarea__2J781","xfaPrintOnly":"pdf-module_xfaPrintOnly__Ffx4e","xfaRich":"pdf-module_xfaRich__3LtJL","xfaFont":"pdf-module_xfaFont__QljTs","xfaCaption":"pdf-module_xfaCaption__lIemu","xfaCaptionForCheckButton":"pdf-module_xfaCaptionForCheckButton__APTw3","xfaLabel":"pdf-module_xfaLabel__YP2ju","xfaLeft":"pdf-module_xfaLeft__sskoH","xfaRight":"pdf-module_xfaRight__qpdNI","xfaTop":"pdf-module_xfaTop__nzh3A","xfaBottom":"pdf-module_xfaBottom__pt25D","xfaBorder":"pdf-module_xfaBorder__F3w6x","xfaWrapped":"pdf-module_xfaWrapped__jZu3l","xfaTextfield":"pdf-module_xfaTextfield__eUm-O","xfaSelect":"pdf-module_xfaSelect__ci6MM","xfaCheckbox":"pdf-module_xfaCheckbox__diL6H","xfaRadio":"pdf-module_xfaRadio__8KRSJ","xfaButton":"pdf-module_xfaButton__DqBxa","xfaLink":"pdf-module_xfaLink__st76Q","xfaImage":"pdf-module_xfaImage__fp3Wp","xfaLrTb":"pdf-module_xfaLrTb__VXUGl","xfaRlTb":"pdf-module_xfaRlTb__tQ7ho","xfaTb":"pdf-module_xfaTb__bgHsM","xfaLr":"pdf-module_xfaLr__fUacG","xfaRl":"pdf-module_xfaRl__W-t21","xfaPosition":"pdf-module_xfaPosition__08nWA","xfaArea":"pdf-module_xfaArea__76brw","xfaValignMiddle":"pdf-module_xfaValignMiddle__aQfyG","xfaTable":"pdf-module_xfaTable__z-CCY","xfaRow":"pdf-module_xfaRow__r0rmy","xfaRlRow":"pdf-module_xfaRlRow__1xGNJ","xfaNonInteractive":"pdf-module_xfaNonInteractive__XnJUo","xfaDisabled":"pdf-module_xfaDisabled__5U0zH","xfaReadOnly":"pdf-module_xfaReadOnly__kTHmR","pdfViewer":"pdf-module_pdfViewer__jzaL9","canvasWrapper":"pdf-module_canvasWrapper__s-S9Z","page":"pdf-module_page__aaxkW","dummyPage":"pdf-module_dummyPage__PoGj-","removePageBorders":"pdf-module_removePageBorders__fYS6q","singlePageView":"pdf-module_singlePageView__T6DC5","scrollHorizontal":"pdf-module_scrollHorizontal__EQ082","scrollWrapped":"pdf-module_scrollWrapped__ig11O","spread":"pdf-module_spread__gLe3f","loadingIcon":"pdf-module_loadingIcon__uLC7j","notVisible":"pdf-module_notVisible__Vqnbr","enablePermissions":"pdf-module_enablePermissions__jBOYY","pdfPresentationMode":"pdf-module_pdfPresentationMode__SNnX7"};
+    var css_248z$7 = ".index-module_textLayer__DnO8Y {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n}\n.index-module_textLayer__DnO8Y > span {\n  display: block;\n  position: absolute;\n}\n.index-module_moveContent__A4Md1 {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  cursor: move;\n}\n";
+    var styles$6 = {"textLayer":"index-module_textLayer__DnO8Y","moveContent":"index-module_moveContent__A4Md1"};
     styleInject(css_248z$7);
+
+    var css_248z$6 = ".pdf-module_textLayer__fb7Tz {\n  position: absolute;\n  text-align: initial;\n  left: 0;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  overflow: hidden;\n  opacity: 0.2;\n  line-height: 1;\n  -webkit-text-size-adjust: none;\n  -moz-text-size-adjust: none;\n  text-size-adjust: none;\n  forced-color-adjust: none;\n}\n.pdf-module_textLayer__fb7Tz span,\n.pdf-module_textLayer__fb7Tz br {\n  color: transparent;\n  position: absolute;\n  white-space: pre;\n  cursor: text;\n  transform-origin: 0% 0%;\n}\n/* Only necessary in Google Chrome, see issue 14205, and most unfortunately\n   * the problem doesn't show up in \"text\" reference tests. */\n.pdf-module_textLayer__fb7Tz span.pdf-module_markedContent__TyiUD {\n  top: 0;\n  height: 0;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B {\n  margin: -1px;\n  padding: 1px;\n  background-color: #b400aa;\n  border-radius: 4px;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B.pdf-module_appended__Y3BJx {\n  position: initial;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B.pdf-module_begin__ynY-4 {\n  border-radius: 4px 0 0 4px;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B.pdf-module_end__pJ7vn {\n  border-radius: 0 4px 4px 0;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B.pdf-module_middle__8LxsR {\n  border-radius: 0;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_highlight__Wkh7B.pdf-module_selected__tFFiO {\n  background-color: #006400;\n}\n.pdf-module_textLayer__fb7Tz ::-moz-selection {\n  background: #0000ff;\n}\n.pdf-module_textLayer__fb7Tz ::selection {\n  background: #0000ff;\n}\n/* Avoids https://github.com/mozilla/pdf.js/issues/13840 in Chrome */\n.pdf-module_textLayer__fb7Tz br::-moz-selection {\n  background: transparent;\n}\n.pdf-module_textLayer__fb7Tz br::selection {\n  background: transparent;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_endOfContent__-NBFe {\n  display: block;\n  position: absolute;\n  left: 0;\n  top: 100%;\n  right: 0;\n  bottom: 0;\n  z-index: -1;\n  cursor: default;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  user-select: none;\n}\n.pdf-module_textLayer__fb7Tz .pdf-module_endOfContent__-NBFe.pdf-module_active__0PeQA {\n  top: 0;\n}\n:root {\n  --annotation-unfocused-field-background: url(\"data:image/svg+xml;charset=UTF-8,<svg width='1px' height='1px' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' style='fill:rgba(0, 54, 255, 0.13);'/></svg>\");\n}\n.pdf-module_annotationLayer__uGgO5 section {\n  position: absolute;\n  text-align: initial;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_linkAnnotation__tcqHa > a,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_pushButton__j1AYl > a {\n  position: absolute;\n  font-size: 1em;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_pushButton__j1AYl > canvas {\n  position: relative;\n  top: 0;\n  left: 0;\n  z-index: -1;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_linkAnnotation__tcqHa > a:hover,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_pushButton__j1AYl > a:hover {\n  opacity: 0.2;\n  background: #ffff00;\n  box-shadow: 0 2px 10px #ffff00;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textAnnotation__DFTlL img {\n  position: absolute;\n  cursor: pointer;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input {\n  background-image: var(--annotation-unfocused-field-background);\n  border: 1px solid transparent;\n  box-sizing: border-box;\n  font-size: 9px;\n  height: 100%;\n  margin: 0;\n  padding: 0 3px;\n  vertical-align: top;\n  width: 100%;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select option {\n  padding: 0;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input {\n  border-radius: 50%;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea {\n  font: message-box;\n  font-size: 9px;\n  resize: none;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input[disabled],\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea[disabled],\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select[disabled],\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input[disabled],\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input[disabled] {\n  background: none;\n  border: 1px solid transparent;\n  cursor: not-allowed;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input:hover,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea:hover,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select:hover,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:hover,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input:hover {\n  border: 1px solid #000000;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input:focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea:focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select:focus {\n  background: none;\n  border: 1px solid transparent;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input :focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR textarea :focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_choiceWidgetAnnotation__8OgG- select :focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB :focus,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 :focus {\n  background-image: none;\n  background-color: transparent;\n  outline: auto;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:before,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:after,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input:checked:before {\n  background-color: #000000;\n  content: \"\";\n  display: block;\n  position: absolute;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:before,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:after {\n  height: 80%;\n  left: 45%;\n  width: 1px;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:before {\n  transform: rotate(45deg);\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input:checked:after {\n  transform: rotate(-45deg);\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input:checked:before {\n  border-radius: 50%;\n  height: 50%;\n  left: 30%;\n  top: 20%;\n  width: 50%;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input.pdf-module_comb__MLF-c {\n  font-family: monospace;\n  padding-left: 2px;\n  padding-right: 0;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_textWidgetAnnotation__zuOKR input.pdf-module_comb__MLF-c:focus {\n  /*\n     * Letter spacing is placed on the right side of each character. Hence, the\n     * letter spacing of the last character may be placed outside the visible\n     * area, causing horizontal scrolling. We avoid this by extending the width\n     * when the element has focus and revert this when it loses focus.\n     */\n  width: 103%;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_checkBox__qZBMB input,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_buttonWidgetAnnotation__Mbzdl.pdf-module_radioButton__XjGo6 input {\n  -webkit-appearance: none;\n  -moz-appearance: none;\n  appearance: none;\n  padding: 0;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popupWrapper__HkU5f {\n  position: absolute;\n  width: 20em;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popup__brkaW {\n  position: absolute;\n  z-index: 200;\n  max-width: 20em;\n  background-color: #ffff99;\n  box-shadow: 0 2px 5px #888888;\n  border-radius: 2px;\n  padding: 6px;\n  margin-left: 5px;\n  cursor: pointer;\n  font: message-box;\n  font-size: 9px;\n  white-space: normal;\n  word-wrap: break-word;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popup__brkaW > * {\n  font-size: 9px;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popup__brkaW h1 {\n  display: inline-block;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popupDate__N-7C7 {\n  display: inline-block;\n  margin-left: 5px;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_popupContent__E-Mw9 {\n  border-top: 1px solid #333333;\n  margin-top: 2px;\n  padding-top: 2px;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_richText__fDxbu > * {\n  white-space: pre-wrap;\n}\n.pdf-module_annotationLayer__uGgO5 .pdf-module_highlightAnnotation__YCs9h,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_underlineAnnotation__Wpq-Z,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_squigglyAnnotation__7fcwy,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_strikeoutAnnotation__C1DIA,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_freeTextAnnotation__5x-LB,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_lineAnnotation__ZdUQZ svg line,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_squareAnnotation__Lk-eW svg rect,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_circleAnnotation__gOMkp svg ellipse,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_polylineAnnotation__sy35X svg polyline,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_polygonAnnotation__Ec6ZG svg polygon,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_caretAnnotation__8XwLZ,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_inkAnnotation__28tm8 svg polyline,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_stampAnnotation__Ahlkg,\n.pdf-module_annotationLayer__uGgO5 .pdf-module_fileAttachmentAnnotation__4Bxz2 {\n  cursor: pointer;\n}\n:root {\n  --xfa-unfocused-field-background: url(\"data:image/svg+xml;charset=UTF-8,<svg width='1px' height='1px' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' style='fill:rgba(0, 54, 255, 0.13);'/></svg>\");\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B {\n  margin: -1px;\n  padding: 1px;\n  background-color: #efcbed;\n  border-radius: 4px;\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B.pdf-module_appended__Y3BJx {\n  position: initial;\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B.pdf-module_begin__ynY-4 {\n  border-radius: 4px 0 0 4px;\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B.pdf-module_end__pJ7vn {\n  border-radius: 0 4px 4px 0;\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B.pdf-module_middle__8LxsR {\n  border-radius: 0;\n}\n.pdf-module_xfaLayer__EbU1O .pdf-module_highlight__Wkh7B.pdf-module_selected__tFFiO {\n  background-color: #cbdfcb;\n}\n.pdf-module_xfaLayer__EbU1O ::-moz-selection {\n  background: #0000ff;\n}\n.pdf-module_xfaLayer__EbU1O ::selection {\n  background: #0000ff;\n}\n.pdf-module_xfaPage__jflSj {\n  overflow: hidden;\n  position: relative;\n}\n.pdf-module_xfaContentarea__2J781 {\n  position: absolute;\n}\n.pdf-module_xfaPrintOnly__Ffx4e {\n  display: none;\n}\n.pdf-module_xfaLayer__EbU1O {\n  position: absolute;\n  text-align: initial;\n  top: 0;\n  left: 0;\n  transform-origin: 0 0;\n  line-height: 1.2;\n}\n.pdf-module_xfaLayer__EbU1O * {\n  color: inherit;\n  font: inherit;\n  font-style: inherit;\n  font-weight: inherit;\n  font-kerning: inherit;\n  letter-spacing: -0.01px;\n  text-align: inherit;\n  text-decoration: inherit;\n  box-sizing: border-box;\n  background-color: transparent;\n  padding: 0;\n  margin: 0;\n  pointer-events: auto;\n  line-height: inherit;\n}\n.pdf-module_xfaLayer__EbU1O div {\n  pointer-events: none;\n}\n.pdf-module_xfaLayer__EbU1O svg {\n  pointer-events: none;\n}\n.pdf-module_xfaLayer__EbU1O svg * {\n  pointer-events: none;\n}\n.pdf-module_xfaLayer__EbU1O a {\n  color: blue;\n}\n.pdf-module_xfaRich__3LtJL li {\n  margin-left: 3em;\n}\n.pdf-module_xfaFont__QljTs {\n  color: black;\n  font-weight: normal;\n  font-kerning: none;\n  font-size: 10px;\n  font-style: normal;\n  letter-spacing: 0;\n  text-decoration: none;\n  vertical-align: 0;\n}\n.pdf-module_xfaCaption__lIemu {\n  overflow: hidden;\n  flex: 0 0 auto;\n}\n.pdf-module_xfaCaptionForCheckButton__APTw3 {\n  overflow: hidden;\n  flex: 1 1 auto;\n}\n.pdf-module_xfaLabel__YP2ju {\n  height: 100%;\n  width: 100%;\n}\n.pdf-module_xfaLeft__sskoH {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n}\n.pdf-module_xfaRight__qpdNI {\n  display: flex;\n  flex-direction: row-reverse;\n  align-items: center;\n}\n.pdf-module_xfaLeft__sskoH > .pdf-module_xfaCaption__lIemu,\n.pdf-module_xfaLeft__sskoH > .pdf-module_xfaCaptionForCheckButton__APTw3,\n.pdf-module_xfaRight__qpdNI > .pdf-module_xfaCaption__lIemu,\n.pdf-module_xfaRight__qpdNI > .pdf-module_xfaCaptionForCheckButton__APTw3 {\n  max-height: 100%;\n}\n.pdf-module_xfaTop__nzh3A {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n}\n.pdf-module_xfaBottom__pt25D {\n  display: flex;\n  flex-direction: column-reverse;\n  align-items: flex-start;\n}\n.pdf-module_xfaTop__nzh3A > .pdf-module_xfaCaption__lIemu,\n.pdf-module_xfaTop__nzh3A > .pdf-module_xfaCaptionForCheckButton__APTw3,\n.pdf-module_xfaBottom__pt25D > .pdf-module_xfaCaption__lIemu,\n.pdf-module_xfaBottom__pt25D > .pdf-module_xfaCaptionForCheckButton__APTw3 {\n  width: 100%;\n}\n.pdf-module_xfaBorder__F3w6x {\n  background-color: transparent;\n  position: absolute;\n  pointer-events: none;\n}\n.pdf-module_xfaWrapped__jZu3l {\n  width: 100%;\n  height: 100%;\n}\n.pdf-module_xfaTextfield__eUm-O:focus,\n.pdf-module_xfaSelect__ci6MM:focus {\n  background-image: none;\n  background-color: transparent;\n  outline: auto;\n  outline-offset: -1px;\n}\n.pdf-module_xfaCheckbox__diL6H:focus,\n.pdf-module_xfaRadio__8KRSJ:focus {\n  outline: auto;\n}\n.pdf-module_xfaTextfield__eUm-O,\n.pdf-module_xfaSelect__ci6MM {\n  height: 100%;\n  width: 100%;\n  flex: 1 1 auto;\n  border: none;\n  resize: none;\n  background-image: var(--xfa-unfocused-field-background);\n}\n.pdf-module_xfaTop__nzh3A > .pdf-module_xfaTextfield__eUm-O,\n.pdf-module_xfaTop__nzh3A > .pdf-module_xfaSelect__ci6MM,\n.pdf-module_xfaBottom__pt25D > .pdf-module_xfaTextfield__eUm-O,\n.pdf-module_xfaBottom__pt25D > .pdf-module_xfaSelect__ci6MM {\n  flex: 0 1 auto;\n}\n.pdf-module_xfaButton__DqBxa {\n  cursor: pointer;\n  width: 100%;\n  height: 100%;\n  border: none;\n  text-align: center;\n}\n.pdf-module_xfaLink__st76Q {\n  width: 100%;\n  height: 100%;\n  position: absolute;\n  top: 0;\n  left: 0;\n}\n.pdf-module_xfaCheckbox__diL6H,\n.pdf-module_xfaRadio__8KRSJ {\n  width: 100%;\n  height: 100%;\n  flex: 0 0 auto;\n  border: none;\n}\n.pdf-module_xfaRich__3LtJL {\n  white-space: pre-wrap;\n  width: 100%;\n  height: 100%;\n}\n.pdf-module_xfaImage__fp3Wp {\n  -o-object-position: left top;\n  object-position: left top;\n  -o-object-fit: contain;\n  object-fit: contain;\n  width: 100%;\n  height: 100%;\n}\n.pdf-module_xfaLrTb__VXUGl,\n.pdf-module_xfaRlTb__tQ7ho,\n.pdf-module_xfaTb__bgHsM {\n  display: flex;\n  flex-direction: column;\n  align-items: stretch;\n}\n.pdf-module_xfaLr__fUacG {\n  display: flex;\n  flex-direction: row;\n  align-items: stretch;\n}\n.pdf-module_xfaRl__W-t21 {\n  display: flex;\n  flex-direction: row-reverse;\n  align-items: stretch;\n}\n.pdf-module_xfaTb__bgHsM > div {\n  justify-content: left;\n}\n.pdf-module_xfaPosition__08nWA {\n  position: relative;\n}\n.pdf-module_xfaArea__76brw {\n  position: relative;\n}\n.pdf-module_xfaValignMiddle__aQfyG {\n  display: flex;\n  align-items: center;\n}\n.pdf-module_xfaTable__z-CCY {\n  display: flex;\n  flex-direction: column;\n  align-items: stretch;\n}\n.pdf-module_xfaTable__z-CCY .pdf-module_xfaRow__r0rmy {\n  display: flex;\n  flex-direction: row;\n  align-items: stretch;\n}\n.pdf-module_xfaTable__z-CCY .pdf-module_xfaRlRow__1xGNJ {\n  display: flex;\n  flex-direction: row-reverse;\n  align-items: stretch;\n  flex: 1;\n}\n.pdf-module_xfaTable__z-CCY .pdf-module_xfaRlRow__1xGNJ > div {\n  flex: 1;\n}\n.pdf-module_xfaNonInteractive__XnJUo input,\n.pdf-module_xfaNonInteractive__XnJUo textarea,\n.pdf-module_xfaDisabled__5U0zH input,\n.pdf-module_xfaDisabled__5U0zH textarea,\n.pdf-module_xfaReadOnly__kTHmR input,\n.pdf-module_xfaReadOnly__kTHmR textarea {\n  background: initial;\n}\n@media print {\n  .pdf-module_xfaTextfield__eUm-O,\n  .pdf-module_xfaSelect__ci6MM {\n    background: transparent;\n  }\n  .pdf-module_xfaSelect__ci6MM {\n    -webkit-appearance: none;\n    -moz-appearance: none;\n    appearance: none;\n    text-indent: 1px;\n    text-overflow: \"\";\n  }\n}\n:root {\n  --viewer-container-height: 0;\n  --pdfViewer-padding-bottom: 0;\n  --page-margin: 1px auto -8px;\n  --page-border: 9px solid transparent;\n  --spreadHorizontalWrapped-margin-LR: -3.5px;\n  --zoom-factor: 1;\n}\n@media screen and (forced-colors: active) {\n  :root {\n    --pdfViewer-padding-bottom: 9px;\n    --page-margin: 9px auto 0;\n    --page-border: none;\n    --spreadHorizontalWrapped-margin-LR: 4.5px;\n  }\n}\n.pdf-module_pdfViewer__jzaL9 {\n  padding-bottom: var(--pdfViewer-padding-bottom);\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_canvasWrapper__s-S9Z {\n  overflow: hidden;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW {\n  direction: ltr;\n  width: 816px;\n  height: 1056px;\n  margin: var(--page-margin);\n  position: relative;\n  overflow: visible;\n  border: var(--page-border);\n  background-clip: content-box;\n  -o-border-image: url(images/shadow.png) 9 9 repeat;\n  border-image: url(images/shadow.png) 9 9 repeat;\n  background-color: #ffffff;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_dummyPage__PoGj- {\n  position: relative;\n  width: 0;\n  height: var(--viewer-container-height);\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_removePageBorders__fYS6q .pdf-module_page__aaxkW {\n  margin: 0 auto 10px;\n  border: none;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_singlePageView__T6DC5 {\n  display: inline-block;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_singlePageView__T6DC5 .pdf-module_page__aaxkW {\n  margin: 0;\n  border: none;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollWrapped__ig11O,\n.pdf-module_spread__gLe3f {\n  margin-left: 3.5px;\n  margin-right: 3.5px;\n  text-align: center;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082,\n.pdf-module_spread__gLe3f {\n  white-space: nowrap;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_removePageBorders__fYS6q,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082 .pdf-module_spread__gLe3f,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollWrapped__ig11O .pdf-module_spread__gLe3f {\n  margin-left: 0;\n  margin-right: 0;\n}\n.pdf-module_spread__gLe3f .pdf-module_page__aaxkW,\n.pdf-module_spread__gLe3f .pdf-module_dummyPage__PoGj-,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082 .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollWrapped__ig11O .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082 .pdf-module_spread__gLe3f,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollWrapped__ig11O .pdf-module_spread__gLe3f {\n  display: inline-block;\n  vertical-align: middle;\n}\n.pdf-module_spread__gLe3f .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollHorizontal__EQ082 .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_scrollWrapped__ig11O .pdf-module_page__aaxkW {\n  margin-left: var(--spreadHorizontalWrapped-margin-LR);\n  margin-right: var(--spreadHorizontalWrapped-margin-LR);\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_removePageBorders__fYS6q .pdf-module_spread__gLe3f .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_removePageBorders__fYS6q.pdf-module_scrollHorizontal__EQ082 .pdf-module_page__aaxkW,\n.pdf-module_pdfViewer__jzaL9.pdf-module_removePageBorders__fYS6q.pdf-module_scrollWrapped__ig11O .pdf-module_page__aaxkW {\n  margin-left: 5px;\n  margin-right: 5px;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW canvas {\n  margin: 0;\n  display: block;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW canvas[hidden] {\n  display: none;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW .pdf-module_loadingIcon__uLC7j {\n  position: absolute;\n  display: block;\n  left: 0;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  background: url(\"images/loading-icon.gif\") center no-repeat;\n}\n.pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW .pdf-module_loadingIcon__uLC7j.pdf-module_notVisible__Vqnbr {\n  background: none;\n}\n.pdf-module_pdfViewer__jzaL9.pdf-module_enablePermissions__jBOYY .pdf-module_textLayer__fb7Tz span {\n  -webkit-user-select: none !important;\n  -moz-user-select: none !important;\n  user-select: none !important;\n  cursor: not-allowed;\n}\n.pdf-module_pdfPresentationMode__SNnX7 .pdf-module_pdfViewer__jzaL9 {\n  padding-bottom: 0;\n}\n.pdf-module_pdfPresentationMode__SNnX7 .pdf-module_spread__gLe3f {\n  margin: 0;\n}\n.pdf-module_pdfPresentationMode__SNnX7 .pdf-module_pdfViewer__jzaL9 .pdf-module_page__aaxkW {\n  margin: 0 auto;\n  border: 2px solid transparent;\n}\n";
+    var pdfStyles = {"textLayer":"pdf-module_textLayer__fb7Tz","markedContent":"pdf-module_markedContent__TyiUD","highlight":"pdf-module_highlight__Wkh7B","appended":"pdf-module_appended__Y3BJx","begin":"pdf-module_begin__ynY-4","end":"pdf-module_end__pJ7vn","middle":"pdf-module_middle__8LxsR","selected":"pdf-module_selected__tFFiO","endOfContent":"pdf-module_endOfContent__-NBFe","active":"pdf-module_active__0PeQA","annotationLayer":"pdf-module_annotationLayer__uGgO5","linkAnnotation":"pdf-module_linkAnnotation__tcqHa","buttonWidgetAnnotation":"pdf-module_buttonWidgetAnnotation__Mbzdl","pushButton":"pdf-module_pushButton__j1AYl","textAnnotation":"pdf-module_textAnnotation__DFTlL","textWidgetAnnotation":"pdf-module_textWidgetAnnotation__zuOKR","choiceWidgetAnnotation":"pdf-module_choiceWidgetAnnotation__8OgG-","checkBox":"pdf-module_checkBox__qZBMB","radioButton":"pdf-module_radioButton__XjGo6","comb":"pdf-module_comb__MLF-c","popupWrapper":"pdf-module_popupWrapper__HkU5f","popup":"pdf-module_popup__brkaW","popupDate":"pdf-module_popupDate__N-7C7","popupContent":"pdf-module_popupContent__E-Mw9","richText":"pdf-module_richText__fDxbu","highlightAnnotation":"pdf-module_highlightAnnotation__YCs9h","underlineAnnotation":"pdf-module_underlineAnnotation__Wpq-Z","squigglyAnnotation":"pdf-module_squigglyAnnotation__7fcwy","strikeoutAnnotation":"pdf-module_strikeoutAnnotation__C1DIA","freeTextAnnotation":"pdf-module_freeTextAnnotation__5x-LB","lineAnnotation":"pdf-module_lineAnnotation__ZdUQZ","squareAnnotation":"pdf-module_squareAnnotation__Lk-eW","circleAnnotation":"pdf-module_circleAnnotation__gOMkp","polylineAnnotation":"pdf-module_polylineAnnotation__sy35X","polygonAnnotation":"pdf-module_polygonAnnotation__Ec6ZG","caretAnnotation":"pdf-module_caretAnnotation__8XwLZ","inkAnnotation":"pdf-module_inkAnnotation__28tm8","stampAnnotation":"pdf-module_stampAnnotation__Ahlkg","fileAttachmentAnnotation":"pdf-module_fileAttachmentAnnotation__4Bxz2","xfaLayer":"pdf-module_xfaLayer__EbU1O","xfaPage":"pdf-module_xfaPage__jflSj","xfaContentarea":"pdf-module_xfaContentarea__2J781","xfaPrintOnly":"pdf-module_xfaPrintOnly__Ffx4e","xfaRich":"pdf-module_xfaRich__3LtJL","xfaFont":"pdf-module_xfaFont__QljTs","xfaCaption":"pdf-module_xfaCaption__lIemu","xfaCaptionForCheckButton":"pdf-module_xfaCaptionForCheckButton__APTw3","xfaLabel":"pdf-module_xfaLabel__YP2ju","xfaLeft":"pdf-module_xfaLeft__sskoH","xfaRight":"pdf-module_xfaRight__qpdNI","xfaTop":"pdf-module_xfaTop__nzh3A","xfaBottom":"pdf-module_xfaBottom__pt25D","xfaBorder":"pdf-module_xfaBorder__F3w6x","xfaWrapped":"pdf-module_xfaWrapped__jZu3l","xfaTextfield":"pdf-module_xfaTextfield__eUm-O","xfaSelect":"pdf-module_xfaSelect__ci6MM","xfaCheckbox":"pdf-module_xfaCheckbox__diL6H","xfaRadio":"pdf-module_xfaRadio__8KRSJ","xfaButton":"pdf-module_xfaButton__DqBxa","xfaLink":"pdf-module_xfaLink__st76Q","xfaImage":"pdf-module_xfaImage__fp3Wp","xfaLrTb":"pdf-module_xfaLrTb__VXUGl","xfaRlTb":"pdf-module_xfaRlTb__tQ7ho","xfaTb":"pdf-module_xfaTb__bgHsM","xfaLr":"pdf-module_xfaLr__fUacG","xfaRl":"pdf-module_xfaRl__W-t21","xfaPosition":"pdf-module_xfaPosition__08nWA","xfaArea":"pdf-module_xfaArea__76brw","xfaValignMiddle":"pdf-module_xfaValignMiddle__aQfyG","xfaTable":"pdf-module_xfaTable__z-CCY","xfaRow":"pdf-module_xfaRow__r0rmy","xfaRlRow":"pdf-module_xfaRlRow__1xGNJ","xfaNonInteractive":"pdf-module_xfaNonInteractive__XnJUo","xfaDisabled":"pdf-module_xfaDisabled__5U0zH","xfaReadOnly":"pdf-module_xfaReadOnly__kTHmR","pdfViewer":"pdf-module_pdfViewer__jzaL9","canvasWrapper":"pdf-module_canvasWrapper__s-S9Z","page":"pdf-module_page__aaxkW","dummyPage":"pdf-module_dummyPage__PoGj-","removePageBorders":"pdf-module_removePageBorders__fYS6q","singlePageView":"pdf-module_singlePageView__T6DC5","scrollHorizontal":"pdf-module_scrollHorizontal__EQ082","scrollWrapped":"pdf-module_scrollWrapped__ig11O","spread":"pdf-module_spread__gLe3f","loadingIcon":"pdf-module_loadingIcon__uLC7j","notVisible":"pdf-module_notVisible__Vqnbr","enablePermissions":"pdf-module_enablePermissions__jBOYY","pdfPresentationMode":"pdf-module_pdfPresentationMode__SNnX7"};
+    styleInject(css_248z$6);
 
     var highlightClassName = "".concat(pdfStyles.highlight, " ").concat(pdfStyles.appended, " ").concat(pdfStyles.begin, " ").concat(pdfStyles.end);
     var TextLayerComponent = /** @class */ (function () {
@@ -118362,7 +118385,7 @@ var pdfParser = (function (documentReader) {
                             index = pageIndex - 1;
                             if (!this._moveWrapper[index]) {
                                 this._moveWrapper[index] = document.createElement("div");
-                                this._moveWrapper[index].className = styles$7.moveContent;
+                                this._moveWrapper[index].className = styles$6.moveContent;
                                 this._loadPageMoveContentEvents(index, pageWrapperEle.parentElement);
                                 pageWrapperEle.appendChild(this._moveWrapper[index]);
                             }
@@ -118471,9 +118494,9 @@ var pdfParser = (function (documentReader) {
         return TextLayerComponent;
     }());
 
-    var css_248z$6 = ".index-module_annotations__JMB1x {\n  width: 100%;\n  height: 100%;\n  overflow-x: hidden;\n  overflow-y: auto;\n}\n";
-    var styles$6 = {"annotations":"index-module_annotations__JMB1x"};
-    styleInject(css_248z$6);
+    var css_248z$5 = ".index-module_annotations__JMB1x {\n  width: 100%;\n  height: 100%;\n  overflow-x: hidden;\n  overflow-y: auto;\n}\n";
+    var styles$5 = {"annotations":"index-module_annotations__JMB1x"};
+    styleInject(css_248z$5);
 
     var htmlTemplateStr = (_) => `<div class="<%= styles.annotation %> <%= styles.shrink %>">
     <div class="<%= styles.title %>">
@@ -118495,10 +118518,34 @@ var pdfParser = (function (documentReader) {
     </div>
 </div>`;
 
-    var css_248z$5 = ".index-module_annotation__MC9X9 {\n  width: 100%;\n  overflow: hidden;\n  margin-bottom: 20px;\n  transition: all 0.3s;\n}\n.index-module_annotation__MC9X9.index-module_shrink__0UkED {\n  height: 18px;\n  transition: all 0.3s;\n}\n.index-module_annotation__MC9X9.index-module_shrink__0UkED > .index-module_title__iMC09 > .index-module_jiantou__0QZPD {\n  transition: all 0.3s;\n  transform: rotate(-90deg);\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 {\n  width: 100%;\n  overflow: hidden;\n  height: 18px;\n  line-height: 18px;\n  font-size: 0;\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_jiantou__0QZPD,\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_icon__bPmR6 {\n  position: relative;\n  display: inline-block;\n  width: 18px;\n  height: 100%;\n  text-align: center;\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_jiantou__0QZPD > img,\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_icon__bPmR6 > img {\n  vertical-align: middle;\n  position: absolute;\n  top: 50%;\n  left: 50%;\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_jiantou__0QZPD {\n  cursor: pointer;\n  transition: all 0.3s;\n  transform: rotate(0deg);\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_icon__bPmR6 {\n  margin-right: 6px;\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_titleContent__eoGGo {\n  font-size: 12px;\n  font-weight: bolder;\n  display: inline-block;\n  width: calc(100% - 18px*2 - 6px);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  line-height: 18px;\n  height: 100%;\n  cursor: pointer;\n}\n.index-module_annotation__MC9X9 > .index-module_textLine__N9pXB {\n  width: 100%;\n  padding-left: calc(18px*2 + 6px);\n  font-size: 0;\n}\n.index-module_annotation__MC9X9 > .index-module_textLine__N9pXB > .index-module_desc__JJvoy,\n.index-module_annotation__MC9X9 > .index-module_textLine__N9pXB > .index-module_descContent__ws5-B {\n  font-size: 12px;\n  display: inline-block;\n  height: 18px;\n  line-height: 18px;\n}\n.index-module_annotation__MC9X9 > .index-module_textLine__N9pXB > .index-module_desc__JJvoy {\n  width: 65px;\n  overflow: hidden;\n}\n.index-module_annotation__MC9X9 > .index-module_textLine__N9pXB > .index-module_descContent__ws5-B {\n  width: calc(100% - calc(18px*2 + 6px) - 65px);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n";
-    var styles$5 = {"annotation":"index-module_annotation__MC9X9","shrink":"index-module_shrink__0UkED","title":"index-module_title__iMC09","jiantou":"index-module_jiantou__0QZPD","icon":"index-module_icon__bPmR6","titleContent":"index-module_titleContent__eoGGo","textLine":"index-module_textLine__N9pXB","desc":"index-module_desc__JJvoy","descContent":"index-module_descContent__ws5-B"};
-    styleInject(css_248z$5);
+    var css_248z$4 = ".index-module_annotation__MC9X9 {\n  width: 100%;\n  overflow: hidden;\n  margin-bottom: 20px;\n  transition: all 0.3s;\n}\n.index-module_annotation__MC9X9.index-module_shrink__0UkED {\n  height: 18px;\n  transition: all 0.3s;\n}\n.index-module_annotation__MC9X9.index-module_shrink__0UkED > .index-module_title__iMC09 > .index-module_jiantou__0QZPD {\n  transition: all 0.3s;\n  transform: rotate(-90deg);\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 {\n  width: 100%;\n  overflow: hidden;\n  height: 18px;\n  line-height: 18px;\n  font-size: 0;\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_jiantou__0QZPD,\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_icon__bPmR6 {\n  position: relative;\n  display: inline-block;\n  width: 18px;\n  height: 100%;\n  text-align: center;\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_jiantou__0QZPD > img,\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_icon__bPmR6 > img {\n  vertical-align: middle;\n  position: absolute;\n  top: 50%;\n  left: 50%;\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_jiantou__0QZPD {\n  cursor: pointer;\n  transition: all 0.3s;\n  transform: rotate(0deg);\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_icon__bPmR6 {\n  margin-right: 6px;\n}\n.index-module_annotation__MC9X9 > .index-module_title__iMC09 > .index-module_titleContent__eoGGo {\n  font-size: 12px;\n  font-weight: bolder;\n  display: inline-block;\n  width: calc(100% - 18px*2 - 6px);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  line-height: 18px;\n  height: 100%;\n  cursor: pointer;\n}\n.index-module_annotation__MC9X9 > .index-module_textLine__N9pXB {\n  width: 100%;\n  padding-left: calc(18px*2 + 6px);\n  font-size: 0;\n}\n.index-module_annotation__MC9X9 > .index-module_textLine__N9pXB > .index-module_desc__JJvoy,\n.index-module_annotation__MC9X9 > .index-module_textLine__N9pXB > .index-module_descContent__ws5-B {\n  font-size: 12px;\n  display: inline-block;\n  height: 18px;\n  line-height: 18px;\n}\n.index-module_annotation__MC9X9 > .index-module_textLine__N9pXB > .index-module_desc__JJvoy {\n  width: 65px;\n  overflow: hidden;\n}\n.index-module_annotation__MC9X9 > .index-module_textLine__N9pXB > .index-module_descContent__ws5-B {\n  width: calc(100% - calc(18px*2 + 6px) - 65px);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n";
+    var styles$4 = {"annotation":"index-module_annotation__MC9X9","shrink":"index-module_shrink__0UkED","title":"index-module_title__iMC09","jiantou":"index-module_jiantou__0QZPD","icon":"index-module_icon__bPmR6","titleContent":"index-module_titleContent__eoGGo","textLine":"index-module_textLine__N9pXB","desc":"index-module_desc__JJvoy","descContent":"index-module_descContent__ws5-B"};
+    styleInject(css_248z$4);
 
+<<<<<<< HEAD
+    var htmlStr$1 = (_) => `<div class="<%= styles.seal %>">
+  <img style="width: 100%; height: 100%;" src="<%= imgUrl %>" alt="印章图片">
+  <div class="<%= styles.maskBgc %>">样章</div>
+</div>
+`;
+
+    var css_248z$3 = ".index-module_seal__NwvOI {\n  position: absolute;\n}\n.index-module_seal__NwvOI > .index-module_maskBgc__52lDg {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: rgba(255, 255, 255, 0.7);\n  font-size: 40px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #2752e7;\n  text-align: center;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n";
+    var styles$3 = {"seal":"index-module_seal__NwvOI","maskBgc":"index-module_maskBgc__52lDg"};
+    styleInject(css_248z$3);
+
+    var htmlParser = htmlTemplateParser$1(htmlStr$1);
+    function createSealSampleEle(imgUrl) {
+        return splitSealSampleEle(htmlTemplateConvertEle(htmlParser({ styles: styles$3, imgUrl: imgUrl })));
+    }
+    function splitSealSampleEle(sealSampleEle) {
+        var sealImgEle = sealSampleEle.querySelector("img");
+        var maskEle = sealSampleEle.querySelector("." + styles$3.maskBgc);
+        return {
+            wrapperEle: sealSampleEle,
+            sealImgEle: sealImgEle,
+            maskEle: maskEle
+        };
+=======
     var htmlTemplateParser = htmlTemplateParser$1(htmlTemplateStr);
     function setttingTextLine(textLineEle, desc, content) {
         if (!desc.endsWith(":")) {
@@ -118511,27 +118558,27 @@ var pdfParser = (function (documentReader) {
         return targetEle;
     }
     function createAnnotationEle(rect, pageIndex, getScale, pageComponent, data, textLineList) {
-        var annotationEle = htmlTemplateConvertEle(htmlTemplateParser(__assign({ styles: styles$5 }, data)));
-        var jiantouEle = annotationEle.querySelector("." + styles$5.jiantou);
+        var annotationEle = htmlTemplateConvertEle(htmlTemplateParser(__assign({ styles: styles$4 }, data)));
+        var jiantouEle = annotationEle.querySelector("." + styles$4.jiantou);
         jiantouEle.onclick = function (event) {
             event.stopImmediatePropagation && event.stopImmediatePropagation();
             event.stopPropagation && event.stopPropagation();
-            if (annotationEle.className.includes(styles$5.shrink)) {
+            if (annotationEle.className.includes(styles$4.shrink)) {
                 annotationEle.className = annotationEle.className
-                    .split(" " + styles$5.shrink)
+                    .split(" " + styles$4.shrink)
                     .join("");
             }
             else {
-                annotationEle.className += " " + styles$5.shrink;
+                annotationEle.className += " " + styles$4.shrink;
             }
         };
-        var textLineEle = annotationEle.querySelector("." + styles$5.textLine);
+        var textLineEle = annotationEle.querySelector("." + styles$4.textLine);
         textLineEle.remove();
         for (var i = 0; i < textLineList.length; i++) {
             var textLineInfo = textLineList[i];
             annotationEle.appendChild(setttingTextLine(textLineEle, textLineInfo.desc, textLineInfo.content));
         }
-        var titleEle = annotationEle.querySelector("." + styles$5.title);
+        var titleEle = annotationEle.querySelector("." + styles$4.title);
         titleEle.onclick = function (event) {
             event.stopImmediatePropagation && event.stopImmediatePropagation();
             event.stopPropagation && event.stopPropagation();
@@ -118542,6 +118589,7 @@ var pdfParser = (function (documentReader) {
             });
         };
         return annotationEle;
+>>>>>>> e75823886e9a41823779667f84cc4a483e64d450
     }
 
     var jiantouUrl = window.URL.createObjectURL(base64ToBlob("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAAAXNSR0IArs4c6QAACV5JREFUeF7tnceOHFUUho833iB5yQKW7ACBBEJesfALIFjAC4DEMxgWwAYeAh4AyeRgcs45GpNzzjknXfmO7RlPd9U9dar6rz5fr++p/u/31+c7PdPu3mE8IACBhQR2wAYCEFhMAEG4OyCwhACCcHtAAEG4ByDgI8AJ4uPGVBICCJKkaLbpI4AgPm5MJSGAIEmKZps+Agji48ZUEgIIkqRotukjgCA+bkwlIYAgSYpmmz4CCOLjxlQSAgiSpGi26SOAID5uTCUhgCBJimabPgII4uPGVBICCJKkaLbpI4AgPm5MJSGAIEmKZps+Agji48ZUEgIIkqRotukjgCA+bkwlIYAgSYpmmz4CCOLjxlQSAgiSpGi26SOAID5uTCUhgCBJimabPgII4uPGVBICCJKkaLbpI4AgPm5MJSGAIEmKZps+Agji48ZUEgIIkqRotukjgCA+bkwlIYAgSYpmmz4CCOLjxlQSAgiSpGi26SOAID5uTCUhgCBJimabPgII4uPGVBICCJKkaLbpI4AgPm5MJSGAIEmKZps+Agji48ZUEgIIkqRotukjgCA+bkwlIYAgSYpmmz4CCOLjxlQSAgiSpGi26SOAID5uTCUhgCBJimabPgII4uPGVBICCJKkaLbpI4AgPm5MJSGAIEmKZps+Agji48ZUEgIIkqRotukjgCA+bkwlIYAgSYpmmz4CCOLjxlQSAgiSpGi26SOAID5uTCUhgCBJimabPgII4uPGVBICCJKkaLbpI4AgPm5MJSEwN0GON7PTzew0M3vBzB4xs7+SdKW8zTPM7HMz+1Q5pCfbnAS5yMyu3rLJr8zsWjO7shbkYcCMj8BuM9trZnvMbFe9xNtmdr+ZXey7pN7UXAS52czOWYKvFHOJme3TQ7yWiS6vcuxcsruTzezg3Hc/B0FKGZf1BH2+mV3Xcy3LfAT69nHAzE71PYXOlLogx5nZm2Z2Qk9k/5lZkeT6nutZ1kagrxwbVy3rr2h7Cq3V6oKcZWZPNyL7t0pyQ+Mcy5cTaJWjXO3Wjh+N5ZmrC3KhmV3joPhPleRGxywjxxLwyFGuUn6rdeKcga6rIKWTv6skN825IIHsXjkQZILyPD9iHR2r/I2kvCYpvwXj0U5giBz8iNXOu3mivEh/ycxOap48MvBnleSWAdfIODpUjsKMF+kT3DnnmdnQF9x/VEnKi0Ye3QQi5HjKzM6e+zsd1F+DbFQZUdjvVZLbuu+P1CsiWJdft59rZrM/teciyMZx3fcPhovu8N+qJLenVmDx5qPkuGBd/mA7J0GiJPm1SrIfSTYRQI5tboi5CRIlyS9mVv6VQ5JDNwVyLPjXco6CRBX6c5XkjuQnCXIsuQHmKkiUJD9VSe5MKglydBQ/Z0GiJPmxSnJXMkmQo0fhcxckSpIfqiR392C2DkuQo2eL6yBIlCTfV0nu6clursuQo6G5dREkSpLvqiT3NjCc01LkaGxrnQSJlKS8wfG+Rpbqy5HD0dC6CRIlybf1j4nlAwjW4YEczhbXUZAoSb6pkjzgZKsyhhwDmlhXQaIk+bpK8uAAxqscjZCj5E/7YRjrLEiUJOWzt8oN8tAq73THcyOHA9rWkXUXJEqSL6skDwcwn+ISyBFEOYMgUZJ8USUpH3eq/ECOwHayCBIlSfn82fLj1qOBHUReCjkiaZpZJkGiJPmsSvJYcBdDL4ccQwluM59NkChJyuc9lZPk8RE68VwSOTzUesxkFCRKkk+qJE/04DzmEuQYkW5WQaIk+bhK8uSIHS27NHKMDD6zIFGSfFQlKR9zM+UDOSagnV2QKEk+rJK0ftC2t2Lk8JJrnEOQQ8AibrgP6lvlx5YkImvZc9q3j7Q4giBHaEXceO9XSZ5pKaFhbURG5GgAjiCbYUXcgEWS8q/zsw099FkakQ05+pA+ag2CHAss4kZ8r0ryXGMfi5ZHZEIORxkIsj20iBvy3SrJ845ejh6JyIIczhIQZDG4iBvznSpJ+U53zyMiA3J4yNcZBFkOL+IGLV9RXV6TvNjYU8RzI0cj9K3LEaQbYMSN+laVpHwZUJ9HxHMiRx/SHWsQpB/EiBu2fJ11OUle7njKiOdCjn69dq5CkE5EhxdE3LhvVEleWfC0Ec+BHP077VyJIJ2INi2IuIFfr5K8uuWpI66NHG19dq5GkE5ExyyIuJEPVkkO1KtHXBM52rvsnECQTkTbLoi4oV+rkpQv8hn61XLI4euxcwpBOhEtXBAhSTlBTvFHODzJGw8DIG53CQQZBjZCkmEJeFfuUH5L5xFkON5VSsLJMbw/BBmZYbn8KiRBjgmK5QSJgzylJMgR1xsnyEQspzpJkGPCQjlB4mGPeZIgR3xfnCATMx3rJEGOFRTJCTIe9MiTBDnG64kTZEVso04S5FhhgZwg48MfcpIgx/j9cIKsmLH3JEEOgeI4QaYroeUkQY7peuEEEWG9cZLsNbOdCzKV/5p7qZntE8qcOgonyPT17zazIskeM9tVn758sMN+M7vKzMq3WPEQIYAgqy3iTDMr31hVvpCHhyABBBEshUg6BBBEpwuSCBJAEMFSiKRDAEF0uiCJIAEEESyFSDoEEESnC5IIEkAQwVKIpEMAQXS6IIkgAQQRLIVIOgQQRKcLkggSQBDBUoikQwBBdLogiSABBBEshUg6BBBEpwuSCBJAEMFSiKRDAEF0uiCJIAEEESyFSDoEEESnC5IIEkAQwVKIpEMAQXS6IIkgAQQRLIVIOgQQRKcLkggSQBDBUoikQwBBdLogiSABBBEshUg6BBBEpwuSCBJAEMFSiKRDAEF0uiCJIAEEESyFSDoEEESnC5IIEkAQwVKIpEMAQXS6IIkgAQQRLIVIOgQQRKcLkggSQBDBUoikQwBBdLogiSABBBEshUg6BBBEpwuSCBJAEMFSiKRDAEF0uiCJIAEEESyFSDoEEESnC5IIEkAQwVKIpEMAQXS6IIkgAQQRLIVIOgQQRKcLkggSQBDBUoikQwBBdLogiSABBBEshUg6BBBEpwuSCBJAEMFSiKRDAEF0uiCJIAEEESyFSDoEEESnC5IIEkAQwVKIpEMAQXS6IIkgAQQRLIVIOgQQRKcLkggSQBDBUoikQwBBdLogiSABBBEshUg6BBBEpwuSCBJAEMFSiKRDAEF0uiCJIAEEESyFSDoEEESnC5IIEkAQwVKIpEMAQXS6IIkggf8BtgYi2IZj8RUAAAAASUVORK5CYII="));
@@ -118551,7 +118599,7 @@ var pdfParser = (function (documentReader) {
             this._pageComponent = _pageComponent;
             this._getScale = _getScale;
             this._wrapperEle = document.createElement("div");
-            this._wrapperEle.className = styles$6.annotations;
+            this._wrapperEle.className = styles$5.annotations;
         }
         AnnotationsComponent.prototype._setttingTextLine = function (textLineEle, desc, content) {
             if (!desc.endsWith(":")) {
@@ -118618,9 +118666,9 @@ var pdfParser = (function (documentReader) {
         return AnnotationsComponent;
     }());
 
-    var css_248z$4 = ".index-module_sealWrapper__g-Kf9 {\n  position: absolute;\n  background: transparent;\n  cursor: pointer;\n  z-index: 99;\n  transition: all 0.3s;\n}\n.index-module_sealWrapper__g-Kf9:hover {\n  background: rgba(39, 82, 231, 0.5);\n}\n.index-module_dragMask__cGIHS {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n}\n";
-    var styles$4 = {"sealWrapper":"index-module_sealWrapper__g-Kf9","dragMask":"index-module_dragMask__cGIHS"};
-    styleInject(css_248z$4);
+    var css_248z$3 = ".index-module_sealWrapper__g-Kf9 {\n  position: absolute;\n  background: transparent;\n  cursor: pointer;\n  z-index: 99;\n  transition: all 0.3s;\n}\n.index-module_sealWrapper__g-Kf9:hover {\n  background: rgba(39, 82, 231, 0.5);\n}\n.index-module_dragMask__cGIHS {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n}\n.index-module_dragMask__cGIHS > .index-module_qiFenMask__Vi82j {\n  position: absolute;\n  right: 0;\n  top: 0;\n  bottom: 0;\n  display: none;\n  overflow: hidden;\n}\n";
+    var styles$3 = {"sealWrapper":"index-module_sealWrapper__g-Kf9","dragMask":"index-module_dragMask__cGIHS","qiFenMask":"index-module_qiFenMask__Vi82j"};
+    styleInject(css_248z$3);
 
     var htmlStr$1 = (_) => `<div class="<%= styles.seal %>">
   <img style="width: 100%; height: 100%;" src="<%= imgUrl %>" alt="印章图片">
@@ -118628,28 +118676,11 @@ var pdfParser = (function (documentReader) {
 </div>
 `;
 
-    var css_248z$3 = ".index-module_seal__NwvOI {\n  position: absolute;\n}\n.index-module_seal__NwvOI > .index-module_maskBgc__52lDg {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: rgba(255, 255, 255, 0.7);\n  font-size: 40px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #2752e7;\n  text-align: center;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n";
-    var styles$3 = {"seal":"index-module_seal__NwvOI","maskBgc":"index-module_maskBgc__52lDg"};
-    styleInject(css_248z$3);
-
-    var htmlParser = htmlTemplateParser$1(htmlStr$1);
-    function createSealSampleEle(imgUrl) {
-        return splitSealSampleEle(htmlTemplateConvertEle(htmlParser({ styles: styles$3, imgUrl: imgUrl })));
-    }
-    function splitSealSampleEle(sealSampleEle) {
-        var sealImgEle = sealSampleEle.querySelector("img");
-        var maskEle = sealSampleEle.querySelector("." + styles$3.maskBgc);
-        return {
-            wrapperEle: sealSampleEle,
-            sealImgEle: sealImgEle,
-            maskEle: maskEle
-        };
-    }
-
-    var css_248z$2 = ".index-module_menu__DvxPJ {\n  width: 110px;\n  position: absolute;\n  overflow: hidden;\n  background-color: #322e2e;\n  z-index: 999999;\n  padding-top: 18px;\n}\n.index-module_menu__DvxPJ > .index-module_option__tcswj {\n  text-align: center;\n  width: 100%;\n  height: 17px;\n  line-height: 17px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-size: 14px;\n  font-weight: 400;\n  margin-bottom: 18px;\n  color: #fff;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_menu__DvxPJ > .index-module_option__tcswj:hover {\n  background: #2752e7;\n}\n";
-    var styles$2 = {"menu":"index-module_menu__DvxPJ","option":"index-module_option__tcswj"};
+    var css_248z$2 = ".index-module_seal__NwvOI {\n  position: absolute;\n}\n.index-module_seal__NwvOI > .index-module_maskBgc__52lDg {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: rgba(255, 255, 255, 0.7);\n  font-size: 40px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #2752e7;\n  text-align: center;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n";
+    var styles$2 = {"seal":"index-module_seal__NwvOI","maskBgc":"index-module_maskBgc__52lDg"};
     styleInject(css_248z$2);
 
+<<<<<<< HEAD
     var MenuOperationImpl = /** @class */ (function () {
         function MenuOperationImpl() {
             /**
@@ -119522,13 +119553,1040 @@ var pdfParser = (function (documentReader) {
             </div>
         </div>
     </div>
+=======
+    var htmlParser = htmlTemplateParser$1(htmlStr$1);
+    function createSealSampleEle(imgUrl) {
+        return splitSealSampleEle(htmlTemplateConvertEle(htmlParser({ styles: styles$2, imgUrl: imgUrl })));
+    }
+    function splitSealSampleEle(sealSampleEle) {
+        var sealImgEle = sealSampleEle.querySelector("img");
+        var maskEle = sealSampleEle.querySelector("." + styles$2.maskBgc);
+        return {
+            wrapperEle: sealSampleEle,
+            sealImgEle: sealImgEle,
+            maskEle: maskEle
+        };
+    }
+
+    var css_248z$1 = ".index-module_menu__DvxPJ {\n  width: 110px;\n  position: absolute;\n  overflow: hidden;\n  background-color: #322e2e;\n  z-index: 999999;\n  padding-top: 18px;\n}\n.index-module_menu__DvxPJ > .index-module_option__tcswj {\n  text-align: center;\n  width: 100%;\n  height: 17px;\n  line-height: 17px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-size: 14px;\n  font-weight: 400;\n  margin-bottom: 18px;\n  color: #fff;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_menu__DvxPJ > .index-module_option__tcswj:hover {\n  background: #2752e7;\n}\n";
+    var styles$1 = {"menu":"index-module_menu__DvxPJ","option":"index-module_option__tcswj"};
+    styleInject(css_248z$1);
+
+    var MenuOperationImpl = /** @class */ (function () {
+        function MenuOperationImpl() {
+            /**
+             * 是否已被销毁
+             */
+            this._destory = false;
+            /**
+             * 菜单ID
+             */
+            this._menuId = createId();
+            /**
+             * 菜单元素
+             */
+            this._menuEle = document.createElement("div");
+            this._menuEle.className = styles$1.menu;
+            this._menuEle.style.display = "none";
+            this.hide = this.hide.bind(this);
+            this._documentClickHide = this._documentClickHide.bind(this);
+        }
+        /**
+         * 销毁监测
+         */
+        MenuOperationImpl.prototype._destoryCheck = function () {
+            if (this._destory) {
+                throw new Error("菜单已被销毁, 无法使用");
+            }
+        };
+        /**
+         * 拼接id
+         * @param id id
+         * @returns 拼接完成的id
+         */
+        MenuOperationImpl.prototype._joinId = function (id) {
+            id = this._menuId + "_" + id;
+            id = id.replace(/\./gi, "");
+            return "_" + id;
+        };
+        MenuOperationImpl.prototype._documentClickHide = function (event) {
+            document.removeEventListener("mousedown", this._documentClickHide);
+            var ele = event.target;
+            if (ele.className.includes(styles$1.option)) {
+                ele._onclick(event);
+                return;
+            }
+            this.hide();
+            if (this._defaultClick) {
+                this._defaultClick(event);
+            }
+        };
+        /**
+         * 显示菜单
+         * @param x x坐标
+         * @param y y坐标
+         * @param ele 要显示道德元素
+         */
+        MenuOperationImpl.prototype.show = function (x, y, ele) {
+            this._destoryCheck();
+            ele = ele || document.body;
+            if (this._menuEle.parentElement !== ele) {
+                ele.appendChild(this._menuEle);
+            }
+            this._menuEle.style.top = y + "px";
+            this._menuEle.style.left = x + "px";
+            this._menuEle.style.display = "block";
+            document.addEventListener("mousedown", this._documentClickHide);
+        };
+        /**
+         * 隐藏菜单
+         */
+        MenuOperationImpl.prototype.hide = function () {
+            this._destoryCheck();
+            this._menuEle.style.display = "none";
+        };
+        /**
+         * 销毁菜单
+         */
+        MenuOperationImpl.prototype.destory = function () {
+            if (this._destory) {
+                return;
+            }
+            this.hide();
+            this._menuEle.remove();
+            delete this._menuEle;
+        };
+        /**
+         * 添加菜单选项
+         * @param menuOption 菜单元素
+         */
+        MenuOperationImpl.prototype.appendMenuOption = function () {
+            var _this = this;
+            var menuOption = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                menuOption[_i] = arguments[_i];
+            }
+            if (menuOption.length === 0) {
+                return;
+            }
+            this._destoryCheck();
+            var _loop_1 = function (i) {
+                var option = menuOption[i];
+                var optionEle = document.createElement("div");
+                optionEle.className = styles$1.option;
+                optionEle.innerText = option.title;
+                if (option.id) {
+                    optionEle.id = this_1._joinId(option.id);
+                }
+                optionEle._onclick = function (event) {
+                    event.stopImmediatePropagation && event.stopImmediatePropagation();
+                    event.stopPropagation && event.stopPropagation();
+                    _this.hide();
+                    if (option.click) {
+                        option.click(event);
+                    }
+                };
+                this_1._menuEle.appendChild(optionEle);
+            };
+            var this_1 = this;
+            for (var i = 0; i < menuOption.length; i++) {
+                _loop_1(i);
+            }
+        };
+        /**
+         * 根据id移除菜单选项
+         * @param ids 要移除的id
+         */
+        MenuOperationImpl.prototype.removeMenuOption = function () {
+            var ids = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                ids[_i] = arguments[_i];
+            }
+            if (ids.length === 0) {
+                return;
+            }
+            this._destoryCheck();
+            for (var i = 0; i < ids.length; i++) {
+                var id = ids[i];
+                var targetEle = this._menuEle.querySelector("#" + this._joinId(id));
+                if (targetEle) {
+                    targetEle.remove();
+                }
+            }
+        };
+        /**
+         * 设置默认单击事件
+         * @param fn 单击方法
+         */
+        MenuOperationImpl.prototype.setDefaultClickEvent = function (fn) {
+            this._defaultClick = fn;
+        };
+        /**
+         * 是否已经显示
+         * @returns 是/否
+         */
+        MenuOperationImpl.prototype.isShow = function () {
+            return this._menuEle.style.display === "block";
+        };
+        MenuOperationImpl.prototype.hideOption = function () {
+            var ids = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                ids[_i] = arguments[_i];
+            }
+            for (var _a = 0, ids_1 = ids; _a < ids_1.length; _a++) {
+                var id = ids_1[_a];
+                var target = this._menuEle.querySelector("#" + this._joinId(id));
+                if (target) {
+                    target.style.display = "none";
+                }
+            }
+        };
+        MenuOperationImpl.prototype.showOption = function () {
+            var ids = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                ids[_i] = arguments[_i];
+            }
+            for (var _a = 0, ids_2 = ids; _a < ids_2.length; _a++) {
+                var id = ids_2[_a];
+                var target = this._menuEle.querySelector("#" + this._joinId(id));
+                if (target) {
+                    target.style.display = "block";
+                }
+            }
+        };
+        return MenuOperationImpl;
+    }());
+    /**
+     * 创建菜单
+     * @param menuOptions 菜单选项
+     * @returns 菜单操作接口
+     */
+    function createMenu(menuOptions) {
+        var menuOperationImpl = new MenuOperationImpl();
+        menuOperationImpl.appendMenuOption.apply(menuOperationImpl, menuOptions);
+        return menuOperationImpl;
+    }
+
+    function sealInfoRender() {
+        var scale = this.scaleGet();
+        var x = this.rect[0] * scale;
+        var y = this.sealWrapperEle.parentElement.clientHeight - this.rect[3] * scale;
+        this.sealWrapperEle.style.top = y + "px";
+        this.sealWrapperEle.style.left = x + "px";
+        this.sealWrapperEle.style.width = this.width * scale + "px";
+        this.sealWrapperEle.style.height = this.height * scale + "px";
+        this.sealWrapperEle.className = styles$3.sealWrapper;
+    }
+    var SealComponent = /** @class */ (function () {
+        function SealComponent(_pageComponent, _scaleGet, _appGet) {
+            var _this = this;
+            this._pageComponent = _pageComponent;
+            this._scaleGet = _scaleGet;
+            this._appGet = _appGet;
+            this._multipageClickMenu = createMenu([]);
+            this._dragSealClickMenu = createMenu([]);
+            this._dragSealContextmenu = createMenu([]);
+            this._qiFenSealClickMenu = createMenu([]);
+            this._manualMenuOptionId = createId();
+            this._cancel = false;
+            this._isRight = false;
+            this._pageEventList = [];
+            this._pageSealInfoMap = {};
+            this._dragMaskEle = [];
+            this._sealNavEle = document.createElement("div");
+            this._waitResult = undefined;
+            this._drageStatus = "no";
+            this._sealNavEle.className = styles$3.sealNav;
+            this._menuOptionCancelClick = this._menuOptionCancelClick.bind(this);
+            this._menuOptionContinueClick = this._menuOptionContinueClick.bind(this);
+            var realCancel = {
+                title: "取消签章",
+                click: function (event) {
+                    _this._cancel = true;
+                    _this._drageStatus = "confirm";
+                    return _this._menuOptionOkClick(event);
+                }
+            };
+            this._qiFenSealClickMenu.appendMenuOption(realCancel);
+            // this._qiFenSealClickMenu.appendMenuOption({
+            //   title: "调整签章",
+            //   click() {},
+            // });
+            this._qiFenSealClickMenu.appendMenuOption({
+                title: "确认签章",
+                click: function (event) {
+                    _this._cancel = false;
+                    _this._drageStatus = "confirm";
+                    return _this._menuOptionOkClick(event);
+                }
+            });
+            this._multipageClickMenu.appendMenuOption(realCancel);
+            this._multipageClickMenu.appendMenuOption({
+                id: this._manualMenuOptionId,
+                title: "继续调整",
+                click: this._menuOptionManualPositionClick.bind(this)
+            });
+            this._multipageClickMenu.appendMenuOption({
+                title: "确认签章",
+                click: function (event) {
+                    _this._cancel = false;
+                    return _this._menuOptionOkClick(event);
+                }
+            });
+            this._multipageClickMenu.hideOption(this._manualMenuOptionId);
+            this._dragSealClickMenu.appendMenuOption({
+                title: "取消签章",
+                click: function (event) {
+                    _this._cancel = false;
+                    return _this._menuOptionCancelClick(event);
+                }
+            });
+            this._dragSealClickMenu.appendMenuOption({
+                title: "继续签章",
+                click: this._menuOptionContinueClick
+            });
+            this._dragSealClickMenu.appendMenuOption({
+                title: "确认签章",
+                click: function (event) {
+                    _this._cancel = false;
+                    return _this._menuOptionOkClick(event);
+                }
+            });
+            this._dragSealClickMenu.setDefaultClickEvent(this._menuOptionCancelClick);
+            this._dragSealContextmenu.appendMenuOption(realCancel);
+            this._dragSealContextmenu.setDefaultClickEvent(this._menuOptionCancelClick);
+        }
+        SealComponent.prototype._qiFenLoad = function () {
+            var _a = this._dragSealInfo.options, mode = _a.mode, qiFenConfig = _a.qiFenConfig, pageNo = _a.pageNo, cernterPositionMode = _a.cernterPositionMode;
+            if (mode !== "qiFeng") {
+                return;
+            }
+            var scale = this._scaleGet();
+            var sealInfo = this._dragSealInfo.sealInfo;
+            var splitPageNum = qiFenConfig.splitPageNum;
+            var splitWidth = sealInfo.width / splitPageNum;
+            var num = 0;
+            for (var i = 0; i < pageNo.length; i++) {
+                try {
+                    var pageIndex = pageNo[i];
+                    var pageIndexStr = pageIndex + "";
+                    var cacheMap = this._dragSealResultCacheMap[pageIndexStr];
+                    if (!cacheMap) {
+                        continue;
+                    }
+                    var dragMaskEle = this._dragMaskEle[pageIndex - 1];
+                    if (!dragMaskEle) {
+                        continue;
+                    }
+                    var cacheMapKeys = Object.keys(cacheMap);
+                    if (cacheMapKeys.length !== 1) {
+                        continue;
+                    }
+                    var qiFenMask = dragMaskEle.querySelector("." + styles$3.qiFenMask);
+                    if (!qiFenMask) {
+                        continue;
+                    }
+                    qiFenMask.style.display = "block";
+                    qiFenMask.style.width = splitWidth * scale + "px";
+                    var sealResult = cacheMap[cacheMapKeys[0]];
+                    debugger;
+                    var currentBlock = num % splitPageNum;
+                    sealResult.x = dragMaskEle.clientWidth / scale - splitWidth / 2;
+                    if (cernterPositionMode === "center") {
+                        sealResult.y = sealResult.y - sealInfo.height / 2;
+                    }
+                    var wrapperEle = sealResult._.wrapperEle;
+                    wrapperEle.style.transform = "scale(".concat(scale, ")");
+                    wrapperEle.style.left =
+                        currentBlock * -splitWidth * scale +
+                            (wrapperEle.clientWidth * scale - wrapperEle.clientWidth) / 2 +
+                            "px";
+                    wrapperEle.style.top =
+                        sealResult._.top +
+                            (wrapperEle.clientHeight * scale - wrapperEle.clientHeight) / 2 +
+                            "px";
+                }
+                finally {
+                    num += 1;
+                }
+            }
+        };
+        /**
+         * 缩放改变
+         * @param scale 缩放比率
+         */
+        SealComponent.prototype._reloadSealResultCache = function (scale, pageIndex) {
+            console.log(this._drageStatus);
+            if (this._drageStatus === "no" || !this._dragSealResultCacheMapLen) {
+                return;
+            }
+            if (this._dragSealInfo.options.mode === "qiFeng") {
+                this._qiFenLoad();
+                return;
+            }
+            var pageIndexStr = pageIndex + "";
+            var sealResultCacheMap = this._dragSealResultCacheMap[pageIndexStr];
+            if (!sealResultCacheMap) {
+                return;
+            }
+            for (var id in sealResultCacheMap) {
+                var sealResultCache = sealResultCacheMap[id];
+                var _a = sealResultCache._, wrapperEle = _a.wrapperEle, top_1 = _a.top, left = _a.left;
+                wrapperEle.style.transform = "scale(".concat(scale, ")");
+                wrapperEle.style.top = top_1 * scale - wrapperEle.clientHeight / 2 + "px";
+                wrapperEle.style.left = left * scale - wrapperEle.clientWidth / 2 + "px";
+            }
+        };
+        /**
+         * 继续调整按钮点击
+         * @param this 当前对象
+         * @param event 事件
+         */
+        SealComponent.prototype._menuOptionManualPositionClick = function (event) {
+            if (!this._manualPositionInfo) {
+                return;
+            }
+            var _a = this._manualPositionInfo.sealDragResultCache._, wrapperEle = _a.wrapperEle, sealImgEle = _a.sealImgEle, maskEle = _a.maskEle;
+            this._manualPositionInfo.globalOptions = this._dragSealInfo.options;
+            this._dragSealInfo = __assign(__assign({}, this._dragSealInfo), { wrapperEle: wrapperEle, sealImgEle: sealImgEle, maskEle: maskEle, options: __assign(__assign({}, this._dragSealInfo.options), { pageNo: [this._manualPositionInfo.pageNo] }) });
+            this._manualPositionInfo.status = "drag";
+            this._drageStatus = "drag";
+            this._dragMaskEle[this._manualPositionInfo.pageNo - 1].dispatchEvent(new MouseEvent("mouseenter"));
+        };
+        /**
+         * 取消菜单点击
+         * @param event 事件
+         */
+        SealComponent.prototype._menuOptionCancelClick = function (event) {
+            var _a;
+            var _b = this._dragSealInfo, _cacheId = _b._cacheId, _cachePageIndexStr = _b._cachePageIndexStr; _b.options;
+            var cacheMap = this._dragSealResultCacheMap[_cachePageIndexStr];
+            if (cacheMap) {
+                delete cacheMap[_cacheId];
+            }
+            delete this._dragSealInfo._cacheId;
+            delete this._dragSealInfo._cachePageIndexStr;
+            delete this._dragSealInfo._cacheResult;
+            this._drageStatus = "drag";
+            (_a = this._dragSealInfo.wrapperEle.parentElement) === null || _a === void 0 ? void 0 : _a.dispatchEvent(new MouseEvent("mouseenter", event));
+        };
+        /**
+         * 继续菜单点击
+         * @param event 事件
+         */
+        SealComponent.prototype._menuOptionContinueClick = function (event) {
+            var _a = this._dragSealInfo, dragSealResult = _a._cacheResult, wrapperEle = _a.wrapperEle, sealInfo = _a.sealInfo, options = _a.options;
+            this._dragSealResultCacheMapLen += 1;
+            var thisInfo = {
+                sealResult: dragSealResult,
+                _: this
+            };
+            wrapperEle.style.zIndex = "999999";
+            wrapperEle.onmouseenter = this._dragSealMouseEnter.bind(thisInfo);
+            wrapperEle.onmouseleave = this._dragSealMouseLeave.bind(thisInfo);
+            wrapperEle.onclick = this._dragSealMouseClick.bind(thisInfo);
+            this._dragSealInfo = __assign(__assign({}, createSealSampleEle(sealInfo.imgUrl)), { options: options, sealInfo: sealInfo });
+            this._menuOptionCancelClick(event);
+        };
+        /**
+         * 确认签章单击事件
+         * @param event 事件
+         */
+        SealComponent.prototype._menuOptionOkClick = function (event) {
+            if (this._drageStatus !== "confirm") {
+                return;
+            }
+            this._drageStatus = "no";
+            try {
+                if (!this._waitResult) {
+                    return;
+                }
+                var result = this._cancel ? undefined : [];
+                var pageSealResultCacheMap = this._dragSealResultCacheMap;
+                for (var pageIndexStr in pageSealResultCacheMap) {
+                    var sealResultMap = pageSealResultCacheMap[pageIndexStr];
+                    for (var id in sealResultMap) {
+                        var sealResult = sealResultMap[id];
+                        sealResult._.wrapperEle.remove();
+                        delete sealResult._;
+                        if (!this._cancel) {
+                            result.push(sealResult);
+                        }
+                    }
+                }
+                this._waitResult.resolve(result);
+            }
+            finally {
+                this._waitResult = undefined;
+                this._dragSealInfo.wrapperEle.remove();
+                this._dragSealResultCacheMap = {};
+                this._dragSealResultCacheMapLen = 0;
+                this._dragSealInfo = undefined;
+                this._manualPositionInfo = undefined;
+            }
+        };
+        /**
+         * 页面鼠标进入事件
+         * @param this this指向
+         * @param event 事件
+         */
+        SealComponent.prototype._pageOnMouseEnter = function (event) {
+            if (this._._drageStatus === "no") {
+                this.sealDragMaskEle.style.zIndex = "0";
+                return;
+            }
+            var dragSealInfo = this._._dragSealInfo;
+            if (!dragSealInfo) {
+                return;
+            }
+            var allowPageNoList = dragSealInfo.options.pageNo || [];
+            if (!allowPageNoList.includes(this.pageIndex)) {
+                this.sealDragMaskEle.style.zIndex = "0";
+                return;
+            }
+            this._._dragSealInfo.options.mode;
+            this._._dragSealInfo.pageIndex = this.pageIndex;
+            this.sealDragMaskEle.style.zIndex = "999999";
+        };
+        /**
+         * 页面鼠标离开事件
+         * @param this this指向
+         * @param event 事件
+         */
+        SealComponent.prototype._pageOnMouseLeave = function (event) {
+            // if (this._._drageStatus !== "confirm" && this._._dragSealResultCacheMap) {
+            //   this.sealDragMaskEle.style.zIndex = "0";
+            // }
+        };
+        /**
+         * 可拖拽印章定位
+         * @param eventPosition 事件定位
+         * @param boundingRect 位置
+         * @param ele 元素
+         */
+        SealComponent.prototype._dragSealElePosition = function (eventPosition, boundingRect, ele) {
+            var height = ele.clientHeight;
+            var width = ele.clientWidth;
+            var targetX = eventPosition.x - boundingRect.left - width / 2;
+            var targetY = eventPosition.y - boundingRect.top - height / 2;
+            var styles = ele.style;
+            styles.top = targetY + "px";
+            styles.left = targetX + "px";
+        };
+        /**
+         * 鼠标进入遮罩
+         * @param this this指向
+         * @param event 事件
+         */
+        SealComponent.prototype._maskMouseEnter = function (event) {
+            var _this = this;
+            var self = this._;
+            if (self._drageStatus !== "drag" ||
+                self._dragSealInfo.options.mode === "qiFeng") {
+                return;
+            }
+            var dragSealInfo = self._dragSealInfo;
+            var targetEle = event.target;
+            var scale = this._._scaleGet();
+            var sealInfo = dragSealInfo.sealInfo, wrapperEle = dragSealInfo.wrapperEle;
+            wrapperEle.onclick = function (event) {
+                _this._._isRight = false;
+                return _this._._dragSealClick.call(_this, event);
+            };
+            if (dragSealInfo.options.mode === "default") {
+                wrapperEle.oncontextmenu = function (event) {
+                    _this._._isRight = true;
+                    return _this._._dragSealClick.call(_this, event);
+                };
+            }
+            // this._._dragSealClick.bind(
+            //   Object.assign({}, this, { isRight: true })
+            // );
+            var wrapperStyles = wrapperEle.style;
+            wrapperStyles.display = "block";
+            wrapperStyles.width = sealInfo.width + "px";
+            wrapperStyles.height = sealInfo.height + "px";
+            dragSealInfo.maskEle.style.lineHeight = sealInfo.height + "px";
+            wrapperStyles.transform = "scale(".concat(scale, ")");
+            if (wrapperEle.parentElement !== targetEle) {
+                targetEle.appendChild(wrapperEle);
+            }
+            self._dragSealElePosition(event, targetEle.getBoundingClientRect(), wrapperEle);
+        };
+        /**
+         * 鼠标在遮罩层移动
+         * @param this this指向
+         * @param event 事件
+         */
+        SealComponent.prototype._maskMouseMove = function (event) {
+            if (this._._drageStatus !== "drag") {
+                return;
+            }
+            this._._dragSealElePosition(event, this.sealDragMaskEle.getBoundingClientRect(), this._._dragSealInfo.wrapperEle);
+        };
+        /**
+         * 鼠标离开遮罩层
+         * @param this this指向
+         * @param event 事件
+         */
+        SealComponent.prototype._maskMouseLeave = function (event) {
+            if (this._._drageStatus !== "confirm" && this._._dragSealInfo) {
+                this._._dragSealInfo.wrapperEle.style.display = "none";
+            }
+        };
+        SealComponent.prototype._maskMouseClick = function (event) {
+            if (this._._multipageClickMenu.isShow() ||
+                !this._._dragSealInfo ||
+                this._._dragSealInfo.options.mode !== "multipage" ||
+                this._._dragSealInfo.options.allowManualPosition) {
+                return;
+            }
+            event.stopImmediatePropagation && event.stopImmediatePropagation();
+            event.stopPropagation && event.stopPropagation();
+            var rootEle = this._._appGet().getRootEle() || document.body;
+            var _a = rootEle.getBoundingClientRect(), top = _a.top, left = _a.left;
+            var x = event.x - left;
+            var y = event.y - top;
+            if (this._._dragSealInfo.options.allowManualPosition) {
+                this._._multipageClickMenu.showOption(this._._manualMenuOptionId);
+            }
+            else {
+                this._._multipageClickMenu.hideOption(this._._manualMenuOptionId);
+            }
+            this._._multipageClickMenu.show(x, y, rootEle);
+        };
+        /**
+         * 拖拽印章鼠标单击事件
+         * @param this this指向
+         * @param event 事件
+         */
+        SealComponent.prototype._dragSealClick = function (event) {
+            this._._drageStatus = "confirm";
+            var pageIndex = this.pageIndex;
+            var dragSealInfo = this._._dragSealInfo;
+            var sealInfo = dragSealInfo.sealInfo, options = dragSealInfo.options, wrapperEle = dragSealInfo.wrapperEle, sealImgEle = dragSealInfo.sealImgEle, maskEle = dragSealInfo.maskEle;
+            console.log(pageIndex);
+            var pageIndexStr = pageIndex + "";
+            var cacheMap = this._._dragSealResultCacheMap[pageIndexStr];
+            if (!cacheMap) {
+                cacheMap = {};
+                this._._dragSealResultCacheMap[pageIndexStr] = cacheMap;
+            }
+            var scale = this._._scaleGet();
+            var top = parseInt(wrapperEle.style.top || "0");
+            var left = parseInt(wrapperEle.style.left || "0");
+            var x = left;
+            var y = wrapperEle.parentElement.clientHeight - top;
+            if (options.cernterPositionMode === "center") {
+                x += sealImgEle.width / 2;
+                y -= sealImgEle.height / 2;
+            }
+            x /= scale;
+            y /= scale;
+            top += wrapperEle.clientHeight / 2;
+            left += wrapperEle.clientWidth / 2;
+            top /= scale;
+            left /= scale;
+            var id = createId();
+            var dragSealResult = {
+                _: {
+                    id: id,
+                    top: top,
+                    left: left,
+                    wrapperEle: wrapperEle,
+                    sealImgEle: sealImgEle,
+                    maskEle: maskEle
+                },
+                pageNo: pageIndex || 1,
+                sealInfo: sealInfo,
+                x: x,
+                y: y,
+                cernterPositionMode: options.cernterPositionMode
+            };
+            if (dragSealInfo.options.mode === "default") {
+                cacheMap[id] = dragSealResult;
+                this._._dragSealResultCacheMapLen += 1;
+            }
+            else if (dragSealInfo.options.mode === "multipage") {
+                if (this._._manualPositionInfo &&
+                    this._._manualPositionInfo.status === "drag") {
+                    var thisInfo = {
+                        _: this._,
+                        pageIndex: pageIndex,
+                        sealDragMaskEle: this.sealDragMaskEle,
+                        sealDragResultCache: dragSealResult,
+                        resultId: id
+                    };
+                    dragSealResult._.wrapperEle.onclick = this._._dragSealMouseClick.bind(thisInfo);
+                    dragSealResult._.id = this._._manualPositionInfo.sealDragResultCache._.id;
+                    Object.assign(this._._manualPositionInfo.sealDragResultCache, dragSealResult);
+                    dragSealInfo.options = this._._manualPositionInfo.globalOptions;
+                    this._._manualPositionInfo.status = "no";
+                }
+                else {
+                    var pageNoList = dragSealInfo.options.pageNo;
+                    var _a = dragSealResult._, srcWrapperEle = _a.wrapperEle, top_2 = _a.top, left_1 = _a.left;
+                    srcWrapperEle.remove();
+                    for (var i = 0; i < pageNoList.length; i++) {
+                        var pageNo = pageNoList[i];
+                        var wrapperIndex = pageNo - 1;
+                        var wrapperMaskEle = this._._dragMaskEle[wrapperIndex];
+                        if (!wrapperMaskEle) {
+                            continue;
+                        }
+                        var id_1 = createId();
+                        // wrapperEle.style.top = srcWrapperEle.style.top;
+                        // wrapperEle.style.left = srcWrapperEle.style.left;
+                        var cloneWrapperEle = srcWrapperEle.cloneNode(true);
+                        wrapperMaskEle.appendChild(cloneWrapperEle);
+                        var _b = splitSealSampleEle(cloneWrapperEle), wrapperEle_1 = _b.wrapperEle, sealImgEle_1 = _b.sealImgEle, maskEle_1 = _b.maskEle;
+                        var cacheResult = __assign(__assign({}, dragSealResult), { _: {
+                                id: id_1,
+                                top: top_2,
+                                left: left_1,
+                                wrapperEle: wrapperEle_1,
+                                sealImgEle: sealImgEle_1,
+                                maskEle: maskEle_1
+                            }, pageNo: wrapperIndex + 1 });
+                        if (pageNo === dragSealResult.pageNo) {
+                            dragSealResult = cacheResult;
+                            this._._manualPositionInfo = {
+                                pageNo: pageNo,
+                                sealDragResultCache: cacheResult,
+                                status: "no"
+                            };
+                        }
+                        var thisInfo = {
+                            _: this._,
+                            pageIndex: pageNo,
+                            sealDragMaskEle: wrapperMaskEle,
+                            sealDragResultCache: cacheResult,
+                            resultId: id_1
+                        };
+                        wrapperEle_1.onclick = this._._dragSealMouseClick.bind(thisInfo);
+                        var cacheMap_1 = this._._dragSealResultCacheMap[pageNo + ""];
+                        if (!cacheMap_1) {
+                            cacheMap_1 = {};
+                            this._._dragSealResultCacheMap[pageNo + ""] = cacheMap_1;
+                        }
+                        cacheMap_1[id_1] = cacheResult;
+                        this._._dragSealResultCacheMapLen += 1;
+                    }
+                }
+            }
+            dragSealInfo._cacheResult = dragSealResult;
+            dragSealInfo._cachePageIndexStr = pageIndexStr;
+            dragSealInfo._cacheId = id;
+            var rootEle = this._._appGet().getRootEle() || document.body;
+            var _c = rootEle.getBoundingClientRect(), _top = _c.top, _left = _c.left;
+            var dragMenu = this._._dragSealClickMenu;
+            if (dragSealInfo.options.mode === "multipage") {
+                dragMenu = this._._multipageClickMenu;
+                if (this._._dragSealInfo.options.allowManualPosition) {
+                    this._._multipageClickMenu.showOption(this._._manualMenuOptionId);
+                }
+                else {
+                    this._._multipageClickMenu.hideOption(this._._manualMenuOptionId);
+                }
+            }
+            else if (this._._isRight) {
+                dragMenu = this._._dragSealContextmenu;
+            }
+            dragMenu.show(event.x - _left, event.y - _top, rootEle);
+        };
+        SealComponent.prototype._dragSealMouseEnter = function (event) {
+            this._._dragSealInfo.wrapperEle.style.display = "none";
+        };
+        SealComponent.prototype._dragSealMouseLeave = function (event) {
+            this._._dragSealInfo.wrapperEle.style.display = "block";
+        };
+        SealComponent.prototype._dragSealMouseClick = function (event) {
+            event.stopImmediatePropagation && event.stopImmediatePropagation();
+            event.stopPropagation && event.stopPropagation();
+            var dragSealInfo = this._._dragSealInfo;
+            if (!dragSealInfo || dragSealInfo.options.mode === "default") {
+                return;
+            }
+            var rootEle = this._._appGet().getRootEle();
+            var _a = rootEle.getBoundingClientRect(), top = _a.top, left = _a.left;
+            var x = event.x - left;
+            var y = event.y - top;
+            if (dragSealInfo.options.mode === "multipage" &&
+                !this._._multipageClickMenu.isShow()) {
+                if (this._._dragSealInfo.options.allowManualPosition) {
+                    this._._multipageClickMenu.showOption(this._._manualMenuOptionId);
+                }
+                else {
+                    this._._multipageClickMenu.hideOption(this._._manualMenuOptionId);
+                }
+                this._._multipageClickMenu.show(x, y, rootEle);
+                this._._manualPositionInfo = {
+                    pageNo: this.pageIndex,
+                    sealDragResultCache: this.sealDragResultCache,
+                    status: "no"
+                };
+                return;
+            }
+        };
+        SealComponent.prototype._qiFenDragSeal = function (event) {
+            var rootEle = this._._appGet().getRootEle() || document.body;
+            var _a = rootEle.getBoundingClientRect(), top = _a.top, left = _a.left;
+            this._._qiFenSealClickMenu.show(event.x - left, event.y - top, rootEle);
+        };
+        SealComponent.prototype.attachRunInit = function () {
+            return false;
+        };
+        SealComponent.prototype.attach = function (doc, page, pageWrapperEle, pageCanvas, pageIndex) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function () {
+                var srcPageEvent, maskWrapperEle, qiFenWrapperEle, dragEventThis, pageMouseEnterEvent, pageMouseLeaveEvent, annotations, pageName, sealInfoMap, keys, i, key, sealInfo;
+                var _this = this;
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
+                        case 0:
+                            this._reloadSealResultCache(this._scaleGet(), pageIndex);
+                            if (!pageWrapperEle.querySelector("." + styles$3.dragMask)) {
+                                srcPageEvent = this._pageEventList[pageIndex - 1];
+                                if (srcPageEvent) {
+                                    pageWrapperEle.removeEventListener("mouseenter", srcPageEvent.onmouseenter);
+                                    pageWrapperEle.removeEventListener("mouseleave", srcPageEvent.onmouseleave);
+                                }
+                                maskWrapperEle = document.createElement("div");
+                                qiFenWrapperEle = document.createElement("div");
+                                qiFenWrapperEle.className = styles$3.qiFenMask;
+                                maskWrapperEle.appendChild(qiFenWrapperEle);
+                                dragEventThis = {
+                                    pageIndex: pageIndex,
+                                    sealDragMaskEle: maskWrapperEle,
+                                    _: this
+                                };
+                                maskWrapperEle.className = styles$3.dragMask;
+                                maskWrapperEle.style.zIndex = "0";
+                                this._dragMaskEle[pageIndex - 1] = maskWrapperEle;
+                                maskWrapperEle.onmouseenter = this._maskMouseEnter.bind(dragEventThis);
+                                maskWrapperEle.onmousemove = this._maskMouseMove.bind(dragEventThis);
+                                maskWrapperEle.onmouseleave = this._maskMouseLeave.bind(dragEventThis);
+                                maskWrapperEle.onclick = this._maskMouseClick.bind(dragEventThis);
+                                pageMouseEnterEvent = this._pageOnMouseEnter.bind(dragEventThis);
+                                pageMouseLeaveEvent = this._pageOnMouseLeave.bind(dragEventThis);
+                                this._pageEventList[pageIndex - 1] = {
+                                    onmouseenter: pageMouseEnterEvent,
+                                    onmouseleave: pageMouseLeaveEvent
+                                };
+                                pageWrapperEle.addEventListener("mouseenter", pageMouseEnterEvent);
+                                pageWrapperEle.addEventListener("mouseleave", pageMouseLeaveEvent);
+                                pageWrapperEle.appendChild(maskWrapperEle);
+                            }
+                            return [4 /*yield*/, page.getAnnotations({ intent: "any" })];
+                        case 1:
+                            annotations = _b.sent();
+                            pageName = pageIndex + "";
+                            sealInfoMap = this._pageSealInfoMap[pageName];
+                            if (!sealInfoMap) {
+                                sealInfoMap = {};
+                                this._pageSealInfoMap[pageName] = sealInfoMap;
+                            }
+                            keys = Object.keys(sealInfoMap);
+                            annotations.forEach(function (annotation) {
+                                if (annotation.fieldType !== "Sig") {
+                                    return;
+                                }
+                                var fieldName = annotation.fieldName;
+                                var sealInfo = sealInfoMap[fieldName];
+                                var index = keys.indexOf(fieldName);
+                                if (index !== -1) {
+                                    keys.splice(index, 1);
+                                }
+                                if (sealInfo) {
+                                    sealInfo.render();
+                                    return;
+                                }
+                                var rect = annotation.rect;
+                                var width = rect[2] - rect[0];
+                                var height = rect[3] - rect[1];
+                                var sealWrapperEle = document.createElement("div");
+                                pageWrapperEle.appendChild(sealWrapperEle);
+                                sealInfo = {
+                                    rect: rect,
+                                    width: width,
+                                    height: height,
+                                    scaleGet: _this._scaleGet,
+                                    name: fieldName,
+                                    img: "",
+                                    sealWrapperEle: sealWrapperEle
+                                };
+                                sealInfo.render = sealInfoRender.bind(sealInfo);
+                                sealInfoMap[fieldName] = sealInfo;
+                                sealInfo.render();
+                            });
+                            for (i = 0; i < keys.length; i++) {
+                                key = keys[i];
+                                sealInfo = sealInfoMap[key];
+                                (_a = sealInfo === null || sealInfo === void 0 ? void 0 : sealInfo.sealWrapperEle) === null || _a === void 0 ? void 0 : _a.remove();
+                                delete sealInfoMap[key];
+                            }
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        SealComponent.prototype.sealDrag = function (sealInfo, options) {
+            return __awaiter(this, void 0, void 0, function () {
+                var res, _a, wrapperEle, sealImgEle, maskEle, scale, i, isEven, dragMaskEle, qiFenMaskEle, pageIndexStr, cacheMap, _b, wrapperEle_2, sealImgEle_2, maskEle_2, sealDragThisInfo, id;
+                var _this = this;
+                return __generator(this, function (_c) {
+                    switch (_c.label) {
+                        case 0:
+                            options = options || {};
+                            options.cernterPositionMode = options.cernterPositionMode || "center";
+                            if (options.mode != "default" &&
+                                options.mode !== "multipage" &&
+                                options.mode !== "qiFeng") {
+                                options.mode = "default";
+                            }
+                            if (options.mode === "qiFeng") {
+                                if (!options.qiFenConfig) {
+                                    options.qiFenConfig = {};
+                                }
+                                if (!options.qiFenConfig.sealMode) {
+                                    options.qiFenConfig.sealMode = "all";
+                                }
+                                if (!options.qiFenConfig.splitPageNum) {
+                                    options.qiFenConfig.splitPageNum = 4;
+                                }
+                            }
+                            if (typeof options.allowManualPosition !== "boolean") {
+                                options.allowManualPosition = false;
+                            }
+                            if (typeof options.minPageNo !== "number" || options.minPageNo < 1) {
+                                options.minPageNo = 1;
+                            }
+                            if (typeof options.maxPageNo !== "number") {
+                                options.maxPageNo = this._pageComponent.docNumPages();
+                            }
+                            if (options.maxPageNo < options.minPageNo) {
+                                throw new Error("参数无效");
+                            }
+                            if (this._waitResult) {
+                                throw new Error("拖拽进程被锁定");
+                            }
+                            res = new Promise(function (resolve, reject) {
+                                _this._waitResult = { resolve: resolve, reject: reject };
+                            });
+                            _a = createSealSampleEle(sealInfo.imgUrl), wrapperEle = _a.wrapperEle, sealImgEle = _a.sealImgEle, maskEle = _a.maskEle;
+                            wrapperEle.style.width = sealInfo.width + "px";
+                            wrapperEle.style.height = sealInfo.height + "px";
+                            this._dragSealInfo = {
+                                wrapperEle: wrapperEle,
+                                sealImgEle: sealImgEle,
+                                options: options,
+                                sealInfo: sealInfo,
+                                maskEle: maskEle
+                            };
+                            scale = this._scaleGet();
+                            this._dragSealResultCacheMap = {};
+                            this._dragSealResultCacheMapLen = 0;
+                            if (!(options.pageNo instanceof Array)) {
+                                options.pageNo = [];
+                                for (i = options.minPageNo; i <= options.maxPageNo; i++) {
+                                    if (options.mode === "qiFeng") {
+                                        isEven = i % 2 === 0;
+                                        if ((options.qiFenConfig.sealMode === "even" && !isEven) ||
+                                            (options.qiFenConfig.sealMode === "odd" && isEven)) {
+                                            continue;
+                                        }
+                                        dragMaskEle = this._dragMaskEle[i - 1];
+                                        if (!dragMaskEle) {
+                                            continue;
+                                        }
+                                        qiFenMaskEle = dragMaskEle.querySelector("." + styles$3.qiFenMask);
+                                        pageIndexStr = i + "";
+                                        cacheMap = {};
+                                        this._dragSealResultCacheMap[pageIndexStr] = cacheMap;
+                                        _b = splitSealSampleEle(this._dragSealInfo.wrapperEle.cloneNode(true)), wrapperEle_2 = _b.wrapperEle, sealImgEle_2 = _b.sealImgEle, maskEle_2 = _b.maskEle;
+                                        wrapperEle_2.style.lineHeight = sealInfo.height + "px";
+                                        sealDragThisInfo = {
+                                            _: this,
+                                            pageIndex: i,
+                                            sealDragMaskEle: dragMaskEle
+                                        };
+                                        wrapperEle_2.onclick = this._qiFenDragSeal.bind(sealDragThisInfo);
+                                        id = createId();
+                                        cacheMap[id] = {
+                                            _: {
+                                                id: id,
+                                                wrapperEle: wrapperEle_2,
+                                                sealImgEle: sealImgEle_2,
+                                                maskEle: maskEle_2,
+                                                top: 0,
+                                                left: 0
+                                            },
+                                            pageNo: i,
+                                            sealInfo: sealInfo,
+                                            x: 0,
+                                            y: dragMaskEle.clientHeight / scale
+                                        };
+                                        this._dragSealResultCacheMapLen += 1;
+                                        qiFenMaskEle.appendChild(wrapperEle_2);
+                                    }
+                                    options.pageNo.push(i);
+                                }
+                            }
+                            this._qiFenLoad();
+                            this._drageStatus = "drag";
+                            return [4 /*yield*/, res];
+                        case 1: return [2 /*return*/, _c.sent()];
+                    }
+                });
+            });
+        };
+        SealComponent.prototype.sealVerifyAll = function (fileId) {
+            return __awaiter(this, void 0, void 0, function () {
+                var sealVerifyResult;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            this._sealVerifyMap = {};
+                            return [4 /*yield*/, sealVerifyAll(fileId)];
+                        case 1:
+                            sealVerifyResult = _a.sent();
+                            console.log(sealVerifyResult);
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        return SealComponent;
+    }());
+
+    var css_248z = ".index-module_mask__2LzJT {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  background-color: rgba(0, 0, 0, 0.2);\n  z-index: 999;\n  overflow: hidden;\n}\n.index-module_mask__2LzJT.index-module_hide__JkSrz {\n  display: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt {\n  width: 405px;\n  height: 199px;\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  margin-top: calc(-199px / 2);\n  margin-left: calc(-405px / 2);\n  background: #fff;\n  box-shadow: 3px 2px 10px 2px rgba(0, 0, 0, 0.16);\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM {\n  width: 100%;\n  height: 40px;\n  background: #2752e7;\n  line-height: 40px;\n  color: #fff;\n  position: relative;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM > .index-module_text__Ymqsz {\n  display: block;\n  padding-left: 16px;\n  font-size: 14px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  cursor: default;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_title__339EM > #index-module_close__Wl40S {\n  display: block;\n  width: 18px;\n  height: 18px;\n  position: absolute;\n  right: 26px;\n  top: 50%;\n  margin-top: calc(-18px / 2);\n  cursor: pointer;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn {\n  width: 100%;\n  height: calc(100%-40px);\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 {\n  width: 100%;\n  padding: 23px 0 44px 0;\n  font-size: 0;\n  height: 30px;\n  line-height: 30px;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > label {\n  display: inline-block;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  margin-left: 31px;\n  margin-right: 6px;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > #index-module_password__Mwfes {\n  display: inline-block;\n  width: 252px;\n  height: 28px;\n  line-height: 28px;\n  font-size: 12px;\n  border-radius: 4px 4px 4px 4px;\n  outline: none;\n  border: 1px solid #e6e6e6;\n  padding-left: 6px;\n  color: #2752e7;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_form__2Plm2 > #index-module_password__Mwfes:focus {\n  border: 1px solid #2752e7;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE {\n  width: 100%;\n  position: relative;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE > #index-module_okBtn__Oixoi {\n  width: 99px;\n  height: 34px;\n  text-align: center;\n  background: #2752e7;\n  border-radius: 4px 4px 4px 4px;\n  line-height: 34px;\n  font-size: 14px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #ffffff;\n  float: right;\n  margin-right: 39px;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.index-module_mask__2LzJT .index-module_pinPop__ZgcFt > .index-module_content__F4Snn > .index-module_btnGroup__JbjYE > #index-module_okBtn__Oixoi.index-module_disabled__TZOXS {\n  background-color: #444c5e;\n  cursor: not-allowed;\n}\n";
+    var styles = {"mask":"index-module_mask__2LzJT","hide":"index-module_hide__JkSrz","pinPop":"index-module_pinPop__ZgcFt","title":"index-module_title__339EM","text":"index-module_text__Ymqsz","close":"index-module_close__Wl40S","content":"index-module_content__F4Snn","form":"index-module_form__2Plm2","password":"index-module_password__Mwfes","btnGroup":"index-module_btnGroup__JbjYE","okBtn":"index-module_okBtn__Oixoi","disabled":"index-module_disabled__TZOXS"};
+    styleInject(css_248z);
+
+    var htmlStr = (_) => `<div class="<%= styles.mask %> <%= styles.hide %>">
+    <div class="<%= styles.pinPop %>">
+        <div class="<%= styles.title %>">
+            <span class="<%= styles.text %>">PIN码</span>
+            <img id="<%= styles.close %>" title="关闭" src="data:image/png;base64,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">
+        </div>
+        <div class="<%= styles.content %>">
+            <div class="<%= styles.form %>">
+                <label for="<%= styles.password %>">请输入PIN码:</label>
+                <input id="<%= styles.password %>" type="password">
+            </div>
+            <div class="<%= styles.btnGroup %>">
+                <div id="<%= styles.okBtn %>" class="<%= styles.disabled %>">确定</div>
+            </div>
+        </div>
+    </div>
+>>>>>>> e75823886e9a41823779667f84cc4a483e64d450
 </div>`;
 
     var waitResult;
-    var pinPopEle = htmlTemplateConvertEle(htmlTemplateParser$1(htmlStr)({ styles: styles$1 }));
-    var passwordEle = pinPopEle.querySelector("#" + styles$1.password);
-    var okBtnEle = pinPopEle.querySelector("#" + styles$1.okBtn);
-    var closeEle = pinPopEle.querySelector("#" + styles$1.close);
+    var pinPopEle = htmlTemplateConvertEle(htmlTemplateParser$1(htmlStr)({ styles: styles }));
+    var passwordEle = pinPopEle.querySelector("#" + styles.password);
+    var okBtnEle = pinPopEle.querySelector("#" + styles.okBtn);
+    var closeEle = pinPopEle.querySelector("#" + styles.close);
     function escKeyHandle(event) {
         if (event.key === "Escape") {
             closeEle.dispatchEvent(new MouseEvent("click"));
@@ -119541,7 +120599,7 @@ var pdfParser = (function (documentReader) {
         }
         var valLen = passwordEle.value.length;
         if (valLen === 0) {
-            okBtnEle.className = styles$1.disabled;
+            okBtnEle.className = styles.disabled;
         }
         else {
             okBtnEle.className = "";
@@ -119553,7 +120611,7 @@ var pdfParser = (function (documentReader) {
             switch (_a.label) {
                 case 0:
                     document.removeEventListener("keydown", escKeyHandle);
-                    pinPopEle.className += " " + styles$1.hide;
+                    pinPopEle.className += " " + styles.hide;
                     return [4 /*yield*/, waitBreakUndefined(function () { return waitResult; })];
                 case 1:
                     res = _a.sent();
@@ -119569,11 +120627,11 @@ var pdfParser = (function (documentReader) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (okBtnEle.className.includes(styles$1.disabled)) {
+                    if (okBtnEle.className.includes(styles.disabled)) {
                         return [2 /*return*/];
                     }
                     document.removeEventListener("keydown", escKeyHandle);
-                    pinPopEle.className += " " + styles$1.hide;
+                    pinPopEle.className += " " + styles.hide;
                     return [4 /*yield*/, waitBreakUndefined(function () { return waitResult; })];
                 case 1:
                     res = _a.sent();
@@ -119593,7 +120651,7 @@ var pdfParser = (function (documentReader) {
         if (waitResult) {
             throw new Error("密码获取进程被锁定");
         }
-        pinPopEle.className = pinPopEle.className.split(" " + styles$1.hide).join("");
+        pinPopEle.className = pinPopEle.className.split(" " + styles.hide).join("");
         passwordEle.focus();
         document.addEventListener("keydown", escKeyHandle);
         return new Promise(function (resovle, reject) {
@@ -119601,6 +120659,7 @@ var pdfParser = (function (documentReader) {
         });
     }
 
+<<<<<<< HEAD
     var css_248z = ".index-module_certInfo__Ifnhj {\n  position: fixed;\n  top: 240px;\n  bottom: 0;\n  left: 40%;\n  right: 0;\n  z-index: 99999999;\n  height: 328px;\n  width: 359px;\n  background-color: #fff;\n  box-shadow: 3px 2px 10px 1px rgba(0, 0, 0, 0.16);\n}\n.index-module_certInfo__Ifnhj .index-module_title__iwY6- {\n  height: 40px;\n  background: #2752e7;\n  color: #fff;\n  font-size: 14px;\n  display: flex;\n  align-items: center;\n  padding-left: 16px;\n}\n.index-module_certInfo__Ifnhj .index-module_close__4JCKl {\n  position: absolute;\n  display: block;\n  right: 26px;\n  width: 18px;\n  height: 18px;\n}\n.index-module_certInfo__Ifnhj .index-module_close__4JCKl:hover {\n  cursor: pointer;\n}\n.index-module_certInfo__Ifnhj .index-module_div__S2OY7 {\n  display: flex;\n  flex-direction: row;\n  margin-top: 12px;\n}\n.index-module_certInfo__Ifnhj .index-module_div__S2OY7 .index-module_left__ib4hl {\n  width: 130px;\n  text-align: right;\n  font-size: 14px;\n  margin-left: 30px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #333333;\n}\n.index-module_certInfo__Ifnhj .index-module_div__S2OY7 .index-module_right__9f6fi {\n  text-align: left;\n  font-size: 14px;\n  margin-left: 2px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #333333;\n}\n.index-module_certInfo__Ifnhj .index-module_okBtn__Syx-f {\n  width: 99px;\n  height: 34px;\n  color: #fff;\n  display: flex;\n  position: absolute;\n  bottom: 30px;\n  right: 20px;\n  justify-content: center;\n  align-items: center;\n  background: #2752e7;\n  border-radius: 4px 4px 4px 4px;\n  opacity: 1;\n}\n.index-module_certInfo__Ifnhj .index-module_okBtn__Syx-f:hover {\n  cursor: pointer;\n}\n.index-module_maskContainer__Wdkgl {\n  position: fixed;\n  top: 0px;\n  left: 0px;\n  width: 100vw;\n  height: 100vh;\n  z-index: 1000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background-color: rgba(0, 0, 0, 0.2);\n}\n.index-module_mask__OibLq {\n  position: fixed;\n  top: 160px;\n  bottom: 0;\n  left: 37%;\n  right: 0;\n  z-index: 999;\n  height: 557px;\n  width: 460px;\n  background-color: #fff;\n  box-shadow: 3px 2px 10px 2px rgba(0, 0, 0, 0.16);\n  border-radius: 0px 0px 0px 0px;\n}\n.index-module_mask__OibLq.index-module_hide__ZVUcR {\n  display: none;\n}\n.index-module_mask__OibLq .index-module_title__iwY6- {\n  height: 40px;\n  background: #2752e7;\n  color: #fff;\n  font-size: 14px;\n  display: flex;\n  align-items: center;\n  padding-left: 16px;\n}\n.index-module_mask__OibLq .index-module_close__4JCKl {\n  position: absolute;\n  display: block;\n  right: 26px;\n  width: 18px;\n  height: 18px;\n}\n.index-module_mask__OibLq .index-module_close__4JCKl:hover {\n  cursor: pointer;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p {\n  padding: 20px 20px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu {\n  display: flex;\n  flex-direction: row;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipLeft__2env0 {\n  height: 40px;\n  width: 40px;\n  background-image: url(\"../../../hh/error.png\");\n  background-size: 100% 100%;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipRight__wgmYo {\n  display: flex;\n  flex-direction: column;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipRight__wgmYo .index-module_top__-S1lN {\n  width: 197px;\n  height: 20px;\n  font-size: 16px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: bold;\n  color: #333333;\n  line-height: 19px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_titleTip__pvglu .index-module_titleTipRight__wgmYo .index-module_bottom__9CkYB {\n  width: 379px;\n  height: 14px;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #999999;\n  line-height: 14px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_tip__irD9k {\n  height: 14px;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: bold;\n  color: #2752e7;\n  line-height: 14px;\n  margin-top: 8px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_sealInfo__1-N-D {\n  margin-top: 8px;\n  height: 14px;\n  margin-left: 42px;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #666666;\n  line-height: 14px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_timeInfoLeft__qkGHi {\n  display: flex;\n  flex-direction: column;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_timeInfoLeft__qkGHi .index-module_leftInfo__ZcicF {\n  height: 14px;\n  font-size: 12px;\n  margin-left: 40px;\n  margin-top: 8px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: 400;\n  color: #666666;\n  line-height: 14px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_btns__r1wG- {\n  padding: 12px 48px 10px 48px;\n  display: flex;\n  justify-content: space-between;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_btn__bF-4C {\n  height: 27px;\n  background-color: #fff;\n  font-size: 12px;\n  font-family: Microsoft YaHei UI-Regular, Microsoft YaHei UI;\n  font-weight: bold;\n  color: #2752e7;\n  border: 1px solid #2752e7;\n  border-radius: 6px;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_btn__bF-4C:hover {\n  cursor: pointer;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_okBtn__Syx-f {\n  width: 99px;\n  height: 34px;\n  color: #fff;\n  display: flex;\n  position: absolute;\n  bottom: 30px;\n  right: 20px;\n  justify-content: center;\n  align-items: center;\n  background: #2752e7;\n  border-radius: 4px 4px 4px 4px;\n  opacity: 1;\n}\n.index-module_mask__OibLq .index-module_content__ZSw-p .index-module_okBtn__Syx-f:hover {\n  cursor: pointer;\n}\n";
     var styles = {"certInfo":"index-module_certInfo__Ifnhj","title":"index-module_title__iwY6-","close":"index-module_close__4JCKl","div":"index-module_div__S2OY7","left":"index-module_left__ib4hl","right":"index-module_right__9f6fi","okBtn":"index-module_okBtn__Syx-f","maskContainer":"index-module_maskContainer__Wdkgl","mask":"index-module_mask__OibLq","hide":"index-module_hide__ZVUcR","content":"index-module_content__ZSw-p","titleTip":"index-module_titleTip__pvglu","titleTipLeft":"index-module_titleTipLeft__2env0","titleTipRight":"index-module_titleTipRight__wgmYo","top":"index-module_top__-S1lN","bottom":"index-module_bottom__9CkYB","tip":"index-module_tip__irD9k","sealInfo":"index-module_sealInfo__1-N-D","timeInfoLeft":"index-module_timeInfoLeft__qkGHi","leftInfo":"index-module_leftInfo__ZcicF","btns":"index-module_btns__r1wG-","btn":"index-module_btn__bF-4C"};
     styleInject(css_248z);
@@ -119639,10 +120698,8 @@ var pdfParser = (function (documentReader) {
         btn.onclick = function () { return certInfo(rootEle); };
         btn1.onclick = function () { return createCertInfo(rootEle); };
         (rootEle || document.body).appendChild(div);
-    }
-
-    var signSealTime = [{}, {}, {}, {}, {}];
-    showSignSealTip(document.body, signSealTime);
+=======
+    // showSignSealTip(document.body,signSealTime)
     var lock = new asyncLock();
     var cMapUrl = undefined;
     var cMapPacked = undefined;
@@ -119658,6 +120715,7 @@ var pdfParser = (function (documentReader) {
             _this._fileUploadInfo = { status: "no" };
             _this._nowPageNo = 1;
             return _this;
+            // public async signseal
             // public async signSealPositionList(...signSeal: SealPositionInfo[]): Promise<void> {
             //   if (this._fileUploadInfo.status !== "ok") {
             //     throw new Error("文件未加载成功, 请售稍后重试!!!");
@@ -119725,18 +120783,15 @@ var pdfParser = (function (documentReader) {
                             _a._pdfDoc = _b.sent();
                             fileOpen(__assign({}, file))
                                 .then(function (id) { return __awaiter(_this, void 0, void 0, function () {
-                                var result;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0:
                                             debugger;
                                             this._fileUploadInfo.status = "ok";
                                             this._fileUploadInfo.id = id;
-                                            return [4 /*yield*/, sealVerifyAll(id)];
+                                            return [4 /*yield*/, this._sealComponent.sealVerifyAll(id)];
                                         case 1:
-                                            result = _a.sent();
-                                            debugger;
-                                            console.log(result);
+                                            _a.sent();
                                             return [2 /*return*/];
                                     }
                                 });
@@ -119962,10 +121017,107 @@ var pdfParser = (function (documentReader) {
                                 }).promise];
                         case 2:
                             _a._pdfDoc = _b.sent();
+                            // this._pageComponent.reloadAllPage({
+                            //   force: true
+                            // })
                             reloadPageNo.forEach(function (pageNo) {
                                 return _this._pageComponent.reloadPage(pageNo, {
                                     force: true
                                 });
+                            });
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        Parser.prototype.signSealKeyword = function (sealInfo, pwd, keyword) {
+            return __awaiter(this, void 0, void 0, function () {
+                var url, _a;
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
+                        case 0:
+                            if (!pwd) {
+                                throw new Error("密码不能为空");
+                            }
+                            if (this._fileUploadInfo.status !== "ok") {
+                                throw new Error("文件未加载成功, 请售稍后重试!!!");
+                            }
+                            if (this._fileUploadInfo.error) {
+                                throw new Error(this._fileUploadInfo.errMsg || "未知的文件获取异常");
+                            }
+                            if (!this._fileUploadInfo.id) {
+                                throw new Error("获取文件ID失败");
+                            }
+                            return [4 /*yield*/, sealInKeyword({
+                                    sealId: sealInfo.id,
+                                    fileId: this._fileUploadInfo.id,
+                                    pwd: pwd,
+                                    keyword: keyword
+                                })];
+                        case 1:
+                            _b.sent();
+                            url = fileUrl(this._fileUploadInfo.id);
+                            _a = this;
+                            return [4 /*yield*/, pdf.exports.getDocument({
+                                    url: url,
+                                    cMapPacked: cMapPacked,
+                                    cMapUrl: cMapUrl
+                                }).promise];
+                        case 2:
+                            _a._pdfDoc = _b.sent();
+                            this._pageComponent.reloadAllPage({
+                                force: true
+                            });
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        Parser.prototype.signSealQiFen = function (sealInfo, pwd) {
+            var options = [];
+            for (var _i = 2; _i < arguments.length; _i++) {
+                options[_i - 2] = arguments[_i];
+            }
+            return __awaiter(this, void 0, void 0, function () {
+                var option, url, _a;
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
+                        case 0:
+                            if (!pwd) {
+                                throw new Error("密码不能为空");
+                            }
+                            if (this._fileUploadInfo.status !== "ok") {
+                                throw new Error("文件未加载成功, 请售稍后重试!!!");
+                            }
+                            if (this._fileUploadInfo.error) {
+                                throw new Error(this._fileUploadInfo.errMsg || "未知的文件获取异常");
+                            }
+                            if (!this._fileUploadInfo.id) {
+                                throw new Error("获取文件ID失败");
+                            }
+                            option = options[0];
+                            return [4 /*yield*/, sealInQF({
+                                    sealId: sealInfo.id,
+                                    fileId: this._fileUploadInfo.id,
+                                    pwd: pwd,
+                                    positionX: option.x,
+                                    positionY: option.y,
+                                    size: option.splitSize,
+                                    page: option.pageNo
+                                })];
+                        case 1:
+                            _b.sent();
+                            url = fileUrl(this._fileUploadInfo.id);
+                            _a = this;
+                            return [4 /*yield*/, pdf.exports.getDocument({
+                                    url: url,
+                                    cMapPacked: cMapPacked,
+                                    cMapUrl: cMapUrl
+                                }).promise];
+                        case 2:
+                            _a._pdfDoc = _b.sent();
+                            this._pageComponent.reloadAllPage({
+                                force: true
                             });
                             return [2 /*return*/];
                     }
@@ -119985,6 +121137,7 @@ var pdfParser = (function (documentReader) {
                 } }), nowBrowser: !documentReader.ieUtil.isIe(), fileSuffix: [".pdf"], isSupportFile: function (file) {
                 return file.name.endsWith(".pdf") && typeof file.path !== "undefined";
             } });
+>>>>>>> e75823886e9a41823779667f84cc4a483e64d450
     }
     /**
      * 加载pdf字体

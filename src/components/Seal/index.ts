@@ -100,10 +100,24 @@ interface SealResultThisInfo {
   _: SealComponent;
 }
 
+interface SealVerifyInfo {
+  error: boolean;
+  msg?: string;
+  signatureName: string;
+  time?: string;
+  page: number;
+  userName?: string[];
+}
+
+interface SealVerifyPageMap {
+  [pageNo: string]: SealVerifyInfo[];
+}
+
 export class SealComponent implements PageComponentAttachInterface {
   private _multipageClickMenu = createMenu([]);
   private _dragSealClickMenu = createMenu([]);
   private _dragSealContextmenu = createMenu([]);
+  private _qiFenSealClickMenu = createMenu([]);
 
   private _manualPositionInfo: ManualPositionInfo | undefined;
   private _manualMenuOptionId = createId();
@@ -121,6 +135,9 @@ export class SealComponent implements PageComponentAttachInterface {
 
   private _dragMaskEle: HTMLElement[] = [];
 
+  private _sealVerifyMap: SealVerifyPageMap;
+  private _sealNavEle = document.createElement("div");
+
   private _waitResult:
     | {
         resolve: (data: any) => void;
@@ -135,6 +152,7 @@ export class SealComponent implements PageComponentAttachInterface {
     private _scaleGet: () => number,
     private _appGet: () => AppInterface
   ) {
+    this._sealNavEle.className = styles.sealNav;
     this._menuOptionCancelClick = this._menuOptionCancelClick.bind(this);
     this._menuOptionContinueClick = this._menuOptionContinueClick.bind(this);
 
@@ -142,9 +160,24 @@ export class SealComponent implements PageComponentAttachInterface {
       title: "取消签章",
       click: (event) => {
         this._cancel = true;
+        this._drageStatus = "confirm";
         return this._menuOptionOkClick(event);
       },
     };
+
+    this._qiFenSealClickMenu.appendMenuOption(realCancel);
+    // this._qiFenSealClickMenu.appendMenuOption({
+    //   title: "调整签章",
+    //   click() {},
+    // });
+    this._qiFenSealClickMenu.appendMenuOption({
+      title: "确认签章",
+      click: (event) => {
+        this._cancel = false;
+        this._drageStatus = "confirm";
+        return this._menuOptionOkClick(event);
+      },
+    });
 
     this._multipageClickMenu.appendMenuOption(realCancel);
     this._multipageClickMenu.appendMenuOption({
@@ -186,14 +219,92 @@ export class SealComponent implements PageComponentAttachInterface {
     this._dragSealContextmenu.setDefaultClickEvent(this._menuOptionCancelClick);
   }
 
+  private _qiFenLoad() {
+    const {
+      mode,
+      qiFenConfig,
+      pageNo,
+      cernterPositionMode,
+    } = this._dragSealInfo.options;
+    if (mode !== "qiFeng") {
+      return;
+    }
+
+    const scale = this._scaleGet();
+    const { sealInfo } = this._dragSealInfo;
+    const splitPageNum = qiFenConfig.splitPageNum;
+    const splitWidth = sealInfo.width / splitPageNum;
+
+    let num = 0;
+    for (let i = 0; i < pageNo.length; i++) {
+      try {
+        const pageIndex = pageNo[i];
+        const pageIndexStr = pageIndex + "";
+        const cacheMap = this._dragSealResultCacheMap[pageIndexStr];
+        if (!cacheMap) {
+          continue;
+        }
+
+        const dragMaskEle = this._dragMaskEle[pageIndex - 1];
+        if (!dragMaskEle) {
+          continue;
+        }
+
+        const cacheMapKeys = Object.keys(cacheMap);
+        if (cacheMapKeys.length !== 1) {
+          continue;
+        }
+
+        const qiFenMask = dragMaskEle.querySelector(
+          "." + styles.qiFenMask
+        ) as HTMLElement;
+        if (!qiFenMask) {
+          continue;
+        }
+        qiFenMask.style.display = "block";
+        qiFenMask.style.width = splitWidth * scale + "px";
+
+        const sealResult = cacheMap[cacheMapKeys[0]];
+
+        debugger;
+        const currentBlock = num % splitPageNum;
+        sealResult.x = dragMaskEle.clientWidth / scale - splitWidth / 2;
+        if (cernterPositionMode === "center") {
+          sealResult.y = sealResult.y - sealInfo.height / 2;
+        }
+        const { wrapperEle } = sealResult._;
+        wrapperEle.style.transform = `scale(${scale})`;
+
+        wrapperEle.style.left =
+          currentBlock * -splitWidth * scale +
+          (wrapperEle.clientWidth * scale - wrapperEle.clientWidth) / 2 +
+          "px";
+
+        wrapperEle.style.top =
+          sealResult._.top +
+          (wrapperEle.clientHeight * scale - wrapperEle.clientHeight) / 2 +
+          "px";
+      } finally {
+        num += 1;
+      }
+    }
+  }
+
   /**
    * 缩放改变
    * @param scale 缩放比率
    */
   private _reloadSealResultCache(scale: number, pageIndex: number) {
+    console.log(this._drageStatus);
     if (this._drageStatus === "no" || !this._dragSealResultCacheMapLen) {
       return;
     }
+
+    if (this._dragSealInfo.options.mode === "qiFeng") {
+      this._qiFenLoad();
+      return;
+    }
+
     const pageIndexStr = pageIndex + "";
     const sealResultCacheMap = this._dragSealResultCacheMap[pageIndexStr];
     if (!sealResultCacheMap) {
@@ -327,6 +438,7 @@ export class SealComponent implements PageComponentAttachInterface {
       this._dragSealResultCacheMap = {};
       this._dragSealResultCacheMapLen = 0;
       this._dragSealInfo = undefined;
+      this._manualPositionInfo = undefined;
     }
   }
 
@@ -350,6 +462,10 @@ export class SealComponent implements PageComponentAttachInterface {
     if (!allowPageNoList.includes(this.pageIndex)) {
       this.sealDragMaskEle.style.zIndex = "0";
       return;
+    }
+
+    const { mode } = this._._dragSealInfo.options;
+    if (mode === "qiFeng") {
     }
 
     this._._dragSealInfo.pageIndex = this.pageIndex;
@@ -394,9 +510,13 @@ export class SealComponent implements PageComponentAttachInterface {
    */
   private _maskMouseEnter(this: SealDragThisInfo, event: MouseEvent) {
     const self = this._;
-    if (self._drageStatus !== "drag") {
+    if (
+      self._drageStatus !== "drag" ||
+      self._dragSealInfo.options.mode === "qiFeng"
+    ) {
       return;
     }
+
     const dragSealInfo = self._dragSealInfo;
 
     const targetEle = event.target as HTMLElement;
@@ -473,7 +593,7 @@ export class SealComponent implements PageComponentAttachInterface {
     if (
       this._._multipageClickMenu.isShow() ||
       !this._._dragSealInfo ||
-      this._._dragSealInfo.options.mode === "default" ||
+      this._._dragSealInfo.options.mode !== "multipage" ||
       this._._dragSealInfo.options.allowManualPosition
     ) {
       return;
@@ -668,8 +788,6 @@ export class SealComponent implements PageComponentAttachInterface {
     this._._dragSealInfo.wrapperEle.style.display = "block";
   }
 
-  private _dragDocumentMousemove(this: DragSealInfo, event: MouseEvent) {}
-
   private _dragSealMouseClick(this: SealDragThisInfo, event: MouseEvent) {
     event.stopImmediatePropagation && event.stopImmediatePropagation();
     event.stopPropagation && event.stopPropagation();
@@ -702,28 +820,11 @@ export class SealComponent implements PageComponentAttachInterface {
     }
   }
 
-  // private _drageSealMouseDown(this: SealDragThisInfo, event: MouseEvent) {
-  //   const dragSealInfo = this._._dragSealInfo;
-  //   if (
-  //     !dragSealInfo ||
-  //     dragSealInfo.options.mode === "default" ||
-  //     !dragSealInfo.options.allowManualPosition
-  //   ) {
-  //     return;
-  //   }
-  //   const self = this as any;
-  //   self.mouseMoveEvent = this._._dragDocumentMousemove.bind(this);
-  //   self.mouseUpEvent = this._._dragSealMouseUp.bind(this);
-  //   this.sealDragMaskEle.addEventListener("mousemove", self.mouseMoveEvent);
-  //   document.addEventListener("mouseup", self.mouseUpEvent);
-  // }
-
-  // private _dragSealMouseUp(this: SealDragThisInfo, event: MouseEvent) {
-  //   const self = this as any;
-  //   debugger;
-  //   this.sealDragMaskEle.removeEventListener("mousemove", self.mouseMoveEvent);
-  //   document.removeEventListener("mouseup", self.mouseUpEvent);
-  // }
+  private _qiFenDragSeal(this: SealDragThisInfo, event: MouseEvent) {
+    const rootEle = this._._appGet().getRootEle() || document.body;
+    const { top, left } = rootEle.getBoundingClientRect();
+    this._._qiFenSealClickMenu.show(event.x - left, event.y - top, rootEle);
+  }
 
   attachRunInit(): boolean {
     return false;
@@ -751,6 +852,10 @@ export class SealComponent implements PageComponentAttachInterface {
       }
 
       const maskWrapperEle = document.createElement("div");
+      const qiFenWrapperEle = document.createElement("div");
+      qiFenWrapperEle.className = styles.qiFenMask;
+
+      maskWrapperEle.appendChild(qiFenWrapperEle);
 
       const dragEventThis: SealDragThisInfo = {
         pageIndex,
@@ -843,12 +948,26 @@ export class SealComponent implements PageComponentAttachInterface {
       options.mode = "default";
     }
 
+    if (options.mode === "qiFeng") {
+      if (!options.qiFenConfig) {
+        options.qiFenConfig = {};
+      }
+
+      if (!options.qiFenConfig.sealMode) {
+        options.qiFenConfig.sealMode = "all";
+      }
+
+      if (!options.qiFenConfig.splitPageNum) {
+        options.qiFenConfig.splitPageNum = 4;
+      }
+    }
+
     if (typeof options.allowManualPosition !== "boolean") {
       options.allowManualPosition = false;
     }
 
-    if (typeof options.minPageNo !== "number") {
-      options.minPageNo = 0;
+    if (typeof options.minPageNo !== "number" || options.minPageNo < 1) {
+      options.minPageNo = 1;
     }
 
     if (typeof options.maxPageNo !== "number") {
@@ -865,13 +984,6 @@ export class SealComponent implements PageComponentAttachInterface {
       this._waitResult = { resolve, reject };
     });
 
-    if (!(options.pageNo instanceof Array)) {
-      options.pageNo = [];
-      for (let i = options.minPageNo; i <= options.maxPageNo; i++) {
-        options.pageNo.push(i);
-      }
-    }
-
     const { wrapperEle, sealImgEle, maskEle } = createSealSampleEle(
       sealInfo.imgUrl
     );
@@ -884,9 +996,94 @@ export class SealComponent implements PageComponentAttachInterface {
       sealInfo,
       maskEle,
     };
-    this._drageStatus = "drag";
-    this._dragSealResultCacheMapLen = 0;
+
+    const scale = this._scaleGet();
+
     this._dragSealResultCacheMap = {};
+    this._dragSealResultCacheMapLen = 0;
+    if (!(options.pageNo instanceof Array)) {
+      options.pageNo = [];
+      for (let i = options.minPageNo; i <= options.maxPageNo; i++) {
+        if (options.mode === "qiFeng") {
+          const isEven = i % 2 === 0;
+          if (
+            (options.qiFenConfig.sealMode === "even" && !isEven) ||
+            (options.qiFenConfig.sealMode === "odd" && isEven)
+          ) {
+            continue;
+          }
+          const dragMaskEle = this._dragMaskEle[i - 1];
+          if (!dragMaskEle) {
+            continue;
+          }
+
+          const qiFenMaskEle = dragMaskEle.querySelector(
+            "." + styles.qiFenMask
+          ) as HTMLElement;
+          const pageIndexStr = i + "";
+
+          const cacheMap: { [id: string]: SealDragResultCache } = {};
+          this._dragSealResultCacheMap[pageIndexStr] = cacheMap;
+
+          const { wrapperEle, sealImgEle, maskEle } = splitSealSampleEle(
+            this._dragSealInfo.wrapperEle.cloneNode(true) as HTMLElement
+          );
+          wrapperEle.style.lineHeight = sealInfo.height + "px";
+          const sealDragThisInfo: SealDragThisInfo = {
+            _: this,
+            pageIndex: i,
+            sealDragMaskEle: dragMaskEle,
+          };
+          wrapperEle.onclick = this._qiFenDragSeal.bind(sealDragThisInfo);
+          const id = createId();
+          cacheMap[id] = {
+            _: {
+              id,
+              wrapperEle,
+              sealImgEle,
+              maskEle,
+              top: 0,
+              left: 0,
+            },
+            pageNo: i,
+            sealInfo,
+            x: 0,
+            y: dragMaskEle.clientHeight / scale,
+          };
+          this._dragSealResultCacheMapLen += 1;
+
+          qiFenMaskEle.appendChild(wrapperEle);
+        }
+        options.pageNo.push(i);
+      }
+    }
+
+    this._qiFenLoad();
+    this._drageStatus = "drag";
     return await res;
+  }
+
+  public async sealVerifyAll(fileId: string) {
+    this._sealVerifyMap = {};
+    this._sealNavEle.innerHTML = "";
+    const sealVerifyResult = await sealVerifyAll(fileId);
+    for (let i = 0; i < sealVerifyResult.length; i++) {
+      const verifyResult = sealVerifyResult[i];
+      const pageIndexStr = verifyResult.page + "";
+      let verifyMap = this._sealVerifyMap[pageIndexStr];
+      if (!verifyMap) {
+        verifyMap = [];
+        this._sealVerifyMap[pageIndexStr] = verifyMap;
+      }
+      verifyMap.push({
+        error: verifyResult.verifyResult,
+        msg: verifyResult.verifyMsg,
+        signatureName: verifyResult.signatureName,
+        time: verifyResult.time,
+        page: verifyResult.page,
+        userName: verifyResult.userName,
+      });
+      
+    }
   }
 }
