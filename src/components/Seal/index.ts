@@ -107,7 +107,7 @@ interface SealResultThisInfo {
   _: SealComponent;
 }
 
-interface SealVerifyInfo {
+export interface SealVerifyInfo {
   error: boolean;
   msg?: string;
   signatureName: string;
@@ -837,10 +837,9 @@ export class SealComponent implements PageComponentAttachInterface {
     this: SealRectContextmenuThisInfo,
     event: MouseEvent
   ) {
-    console.log("触发 => ", this);
     const sealVerifyResult =  this._._sealVerifyMap[this.pageSealInfo.name+"_"+this.pageSealInfo.pageIndex]
     console.log(sealVerifyResult);
-    showSignSealTip( this._._appGet().getRootEle() || document.body,sealVerifyResult)
+    showSignSealTip(this._._appGet().getRootEle() || document.body,sealVerifyResult)
   }
 
   attachRunInit(): boolean {

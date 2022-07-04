@@ -1,4 +1,3 @@
-import { SealInQFReq } from "./../hh/test/types/SealType.d";
 import {
   FileInfo,
   ReaderParserAbstract,
@@ -35,9 +34,8 @@ import { SealComponent } from "./components/Seal";
 import { SealInfo, SealDragOption } from "@byzk/document-reader";
 import { showPinPopAndGetPassword } from "./views/PinPop";
 
-
 const lock = new AsyncLock();
- 
+
 let cMapUrl: string | undefined = undefined;
 let cMapPacked: boolean | undefined = undefined;
 
@@ -64,6 +62,7 @@ class Parser extends ReaderParserAbstract {
     id?: string;
     error?: boolean;
     errMsg?: string;
+    fileName?: string;
   } = { status: "no" };
 
   private _nowPageNo: number = 1;
@@ -132,6 +131,7 @@ class Parser extends ReaderParserAbstract {
   }
 
   async loadFile(file: FileInfo): Promise<void> {
+    this._fileUploadInfo.fileName = file.name;
     this._pdfDoc = await pdfjsLib.getDocument({
       url: file.path,
       cMapPacked,
@@ -144,6 +144,7 @@ class Parser extends ReaderParserAbstract {
         debugger;
         this._fileUploadInfo.status = "ok";
         this._fileUploadInfo.id = id;
+        // this._fileUploadInfo.fileName = file.name;
         await this._sealComponent.sealVerifyAll(id);
       })
       .catch((err) => {
@@ -358,6 +359,8 @@ class Parser extends ReaderParserAbstract {
         force: true,
       })
     );
+
+    this._sealComponent.sealVerifyAll(this._fileUploadInfo.id);
   }
 
   public async signSealKeyword(
@@ -441,6 +444,22 @@ class Parser extends ReaderParserAbstract {
     this._pageComponent.reloadAllPage({
       force: true,
     });
+    this._sealComponent.sealVerifyAll(this._fileUploadInfo.id);
+  }
+
+  public async save(savePath?: string): Promise<void> {
+    const docData = await this._pdfDoc.saveDocument();
+    const url = window.URL.createObjectURL(new Blob([docData], {type: "application/pdf"}));
+    const link = document.createElement("a");
+    link.style.display = "none";
+    link.href = url;
+    link.download = this._fileUploadInfo.fileName;
+    link.click();
+    window.URL.revokeObjectURL(url)
+    // link.setAttribute("download", this._fileUploadInfo.fileName);
+    // document.body.appendChild(link);
+    // link.click();
+    // document.body.removeChild(link);
   }
 
   // public async signseal

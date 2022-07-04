@@ -7721,7 +7721,8 @@ var connConfig = {
 };
 const connectConfigGet = () => connConfig;
 const connectConfigSet = (opt) => { connConfig = opt; };
-const baseUrl = 'http://pdfsvclocal.cn:28006';
+// export const baseUrl = 'http://pdfsvclocal.cn:28006';
+const baseUrl = 'http://127.0.0.1:28006';
 const requestError = {
     timeout: "请求超时",
     networkError: "网络错误"
@@ -7976,6 +7977,7 @@ const signKeyword = async (req, options) => socketReq({
         fileId: req.fileId,
         keyPwd: req.pwd,
         keyword: req.keyword,
+        offset: req.offset,
         keywordNo: req.keywordNo
     }
 }, options);

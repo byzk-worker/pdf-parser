@@ -180,7 +180,11 @@ export interface SealInKeywordReq {
      */
     keyword: string;
     /**
-     * 命中多个关键字，盖哪个
+     * 偏移量
+     */
+    offset?: number;
+    /**
+     * 命中多个关键字，盖哪个,这个值传了就只该指定的了，不是全盖了
      */
     keywordNo?: number;
 }
